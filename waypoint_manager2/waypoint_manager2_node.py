@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from argparse import Action
 import rclpy
 from rclpy.node import Node
@@ -47,8 +48,28 @@ class waypoint_manager2_node(Node):
     def visualization_waypoints(self):
         pass
 
-    def create_arrow(self):
-        pass
+    def create_arrow(self, i, x, y, z, q):
+        arrow = Marker()
+        arrow.header.frame_id = 'map'
+        arrow.ns = "arrows" + str(i)
+        arrow.id = i
+        arrow.type = Marker.ARROW
+        arrow.action = Marker.ADD
+        arrow.pose.position.x = x
+        arrow.pose.position.y = y
+        arrow.pose.position.z = z
+        arrow.pose.orientation.x = q[0]
+        arrow.pose.orientation.y = q[1]
+        arrow.pose.orientation.z = q[2]
+        arrow.pose.orientation.w = q[3]
+        arrow.scale.x = 0.5
+        arrow.scale.y = arrow.scale.z = 0.05
+        arrow.color.r = 1.0
+        arrow.color.g = 0.0
+        arrow.color.b = 0.0
+        arrow.color.a = 1.0
+        arrow.lifetime = rclpy.duration.Duration(seconds = 0.0).to_msg()
+        self.marker_array.markers.append(arrow)
 
     def create_cylinder(self, i, x, y, z):
         cylinder = Marker()
@@ -130,6 +151,7 @@ class waypoint_manager2_node(Node):
 
             self.create_cylinder(i, pose_.pose.position.x, pose_.pose.position.y, pose_.pose.position.z)
             self.create_txt(i, pose_.pose.position.x, pose_.pose.position.y, pose_.pose.position.z)
+            self.create_arrow(i, pose_.pose.position.x, pose_.pose.position.y, pose_.pose.position.z, q)
 
         self.action_client.wait_for_server()  
 
