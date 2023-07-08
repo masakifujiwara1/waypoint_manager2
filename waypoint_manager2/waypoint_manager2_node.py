@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from argparse import Action
 import rclpy
+import copy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from nav2_msgs.action import FollowWaypoints
@@ -8,9 +9,14 @@ from geometry_msgs.msg import PoseStamped
 from copy import deepcopy
 import yaml
 import math
-from visualization_msgs.msg import Marker, MarkerArray
+import sys
+from visualization_msgs.msg import Marker, MarkerArray, InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
+from interactive_markers import InteractiveMarkerServer
+from geometry_msgs.msg import Point
+# import waypoint_manager2.control_manager as control_manager
 
 WAYPOINT_PATH = '/home/fmasa/ros2_ws/src/waypoint_manager2/config/waypoints/test.yaml'
+WP_FEEDBACK_VISIBLE = True
 
 class waypoint_behavior:
     def __init__(self):
@@ -21,7 +27,8 @@ class waypoint_behavior:
 
 class waypoint_manager2_node(Node):
     def __init__(self):
-        super().__init__('rotate_turtle')
+        super().__init__('waypoint_manager2_node')
+        # self.node = rclpy.create_node('simple_marker')
 
         self.action_client = ActionClient(
             self,                     
@@ -33,11 +40,18 @@ class waypoint_manager2_node(Node):
         self.marker_array = MarkerArray()
 
         self.waypoint_pub = self.create_publisher(MarkerArray, 'waypoint_manager2/waypoints', 10)
-        self.time_period = 1.0
-        self.tmr = self.create_timer(self.time_period, self.callback)
+        self.time_period = 0.01
+        # self.tmr = self.create_timer(self.time_period, self.callback)
+
+        # self.interactive_node = interactive()
+        # position = Point(x=0.0, y=-6.0, z=0.0)
+        # self.interactive_node.makeMovingMarker(position)
+        self.server = InteractiveMarkerServer(self, 'marker_control')
 
     def callback(self):
-        self.waypoint_pub.publish(self.marker_array)
+        # self.waypoint_pub.publish(self.marker_array)
+        # self.server.applyChanges()
+        pass
 
     def load_waypoints(self):
         with open(WAYPOINT_PATH, 'r') as yml:
@@ -45,69 +59,84 @@ class waypoint_manager2_node(Node):
         
         # print(len(self.config['waypoint_server']['waypoints']))
 
-    def visualization_waypoints(self):
-        pass
+    def processFeedback(self, feedback):
+        p = feedback.pose.position
+        print(f'{feedback.marker_name} is now at {p.x}, {p.y}, {p.z}')
 
-    def create_arrow(self, i, x, y, z, q):
-        arrow = Marker()
-        arrow.header.frame_id = 'map'
-        arrow.ns = "arrows" + str(i)
-        arrow.id = i
-        arrow.type = Marker.ARROW
-        arrow.action = Marker.ADD
-        arrow.pose.position.x = x
-        arrow.pose.position.y = y
-        arrow.pose.position.z = z
-        arrow.pose.orientation.x = q[0]
-        arrow.pose.orientation.y = q[1]
-        arrow.pose.orientation.z = q[2]
-        arrow.pose.orientation.w = q[3]
-        arrow.scale.x = 0.5
-        arrow.scale.y = arrow.scale.z = 0.05
-        arrow.color.r = 1.0
-        arrow.color.g = 0.0
-        arrow.color.b = 0.0
-        arrow.color.a = 1.0
-        arrow.lifetime = rclpy.duration.Duration(seconds = 0.0).to_msg()
-        self.marker_array.markers.append(arrow)
+    def makeBox(self, msg):
+        marker = Marker()
 
-    def create_cylinder(self, i, x, y, z):
-        cylinder = Marker()
-        cylinder.header.frame_id = 'map'
-        cylinder.ns = "waypoints" + str(i)
-        cylinder.id = i
-        cylinder.type = Marker.CYLINDER
-        cylinder.action = Marker.ADD
-        cylinder.pose.position.x = x
-        cylinder.pose.position.y = y
-        cylinder.pose.position.z = z
-        cylinder.scale.x = cylinder.scale.y = 1.0
-        cylinder.scale.z = 0.01
-        cylinder.color.r = 0.0
-        cylinder.color.g = 1.0
-        cylinder.color.b = 0.0
-        cylinder.color.a = 0.6
-        cylinder.lifetime = rclpy.duration.Duration(seconds = 0.0).to_msg()
-        self.marker_array.markers.append(cylinder)
+        marker.type = Marker.CYLINDER
+        marker.scale.x = msg.scale
+        marker.scale.y = msg.scale
+        marker.scale.z = 0.01
+        marker.color.r = 0.0
+        marker.color.g = 1.0
+        marker.color.b = 0.0
+        marker.color.a = 0.6
+        return marker
 
-    def create_txt(self, i, x, y, z):
-        text = Marker()
-        text.header.frame_id = 'map'
-        text.ns = "texts" + str(i)
-        text.id = i
-        text.type = Marker.TEXT_VIEW_FACING
-        text.action = Marker.ADD
-        text.pose.position.x = x + 0.02
-        text.pose.position.y = y + 0.02
-        text.pose.position.z = z + 0.02
-        text.text = 'waypoints_' + str(i)
-        text.scale.z = 0.3
-        text.color.r = 0.0
-        text.color.g = 0.0
-        text.color.b = 0.0
-        text.color.a = 1.0
-        text.lifetime = rclpy.duration.Duration(seconds = 0.0).to_msg()
-        self.marker_array.markers.append(text)
+    def makeBoxControl(self, msg):
+        control = InteractiveMarkerControl()
+        control.always_visible = True
+        control.markers.append(self.makeBox(msg))
+        msg.controls.append(control)
+        return control
+    
+    def normalizeQuaternion(self, quaternion_msg):
+        norm = quaternion_msg.x**2 + quaternion_msg.y**2 + quaternion_msg.z**2 + quaternion_msg.w**2
+        s = norm**(-0.5)
+        quaternion_msg.x *= s
+        quaternion_msg.y *= s
+        quaternion_msg.z *= s
+        quaternion_msg.w *= s
+
+    def makeMovingMarker(self, position, i):
+        int_marker = InteractiveMarker()
+        int_marker.header.frame_id = 'map'
+        int_marker.pose.position = position
+        int_marker.scale = 1.0
+
+        int_marker.name = 'waypoints' + str(i)
+        int_marker.description = 'waypoints' + str(i)
+
+        control = InteractiveMarkerControl()
+        control.orientation.w = 1.0
+        control.orientation.x = 0.0
+        control.orientation.y = 1.0
+        control.orientation.z = 0.0
+        self.normalizeQuaternion(control.orientation)
+        # control.interaction_mode = InteractiveMarkerControl.MOVE_PLANE
+        control.interaction_mode = InteractiveMarkerControl.MOVE_3D
+        int_marker.controls.append(copy.deepcopy(control))
+
+        # make a box which also moves in the plane
+        control.markers.append(self.makeBox(int_marker))
+        control.always_visible = True
+        int_marker.controls.append(control)
+
+        # we want to use our special callback function
+        self.server.insert(int_marker, feedback_callback=self.processFeedback)
+
+        # set different callback for POSE_UPDATE feedback
+        self.server.setCallback(int_marker.name, self.alignMarker, InteractiveMarkerFeedback.POSE_UPDATE)
+    
+    def alignMarker(self, feedback):
+        pose = feedback.pose
+
+        # pose.position.x = round(pose.position.x - 0.5) + 0.5
+        # pose.position.y = round(pose.position.y - 0.5) + 0.5
+        pose.position.z = 0.0
+
+        if WP_FEEDBACK_VISIBLE:
+            self.get_logger().info(
+                f'{feedback.marker_name}: aligning position = {feedback.pose.position.x}, '
+                f'{feedback.pose.position.y}, {feedback.pose.position.z} to '
+                f'{pose.position.x}, {pose.position.y}, {pose.position.z}'
+            )
+
+        self.server.setPose(feedback.marker_name, pose)
+        self.server.applyChanges()
 
     def quaternion_from_euler(self, roll, pitch, yaw):
         """
@@ -149,9 +178,10 @@ class waypoint_manager2_node(Node):
             pose_.pose.orientation.w = q[3]
             goal_msg.poses.append(deepcopy(pose_))
 
-            self.create_cylinder(i, pose_.pose.position.x, pose_.pose.position.y, pose_.pose.position.z)
-            self.create_txt(i, pose_.pose.position.x, pose_.pose.position.y, pose_.pose.position.z)
-            self.create_arrow(i, pose_.pose.position.x, pose_.pose.position.y, pose_.pose.position.z, q)
+            # create marker
+            # position = Point(x=0.0, y=-6.0, z=0.0)
+            position = Point(x=float(waypoints[i]['position']['x']), y=float(waypoints[i]['position']['y']), z=0.0)
+            self.makeMovingMarker(position, i)
 
         self.action_client.wait_for_server()  
 
@@ -172,7 +202,8 @@ class waypoint_manager2_node(Node):
     def result_callback(self, future):
         result = future.result().result
         print("missed waypoints :", result.missed_waypoints[0])
-        rclpy.shutdown()
+        # self.server.shutdown()
+        # rclpy.shutdown()
 
 def main(args=None):
     rclpy.init(args=args)
@@ -181,7 +212,14 @@ def main(args=None):
 
     action_client.send_goal()
 
+    # position = Point(x=0.0, y=-6.0, z=0.0)
+    # action_client.makeMovingMarker(position)
+
+    action_client.server.applyChanges()
     rclpy.spin(action_client)
+
+    # action_client.server.shutdown()
+    # rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
