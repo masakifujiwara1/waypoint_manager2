@@ -1,95 +1,95 @@
 waypoint_server:
-  scale: 1
-  position:
-    x: 1
-    y: 2
-    z: 3
   euler_angles:
     x: 0
     y: 0
     z: 1.57
+  position:
+    x: 1
+    y: 2
+    z: 3
+  scale: 1
   waypoints:
-    - id: registed_goal_3
-      position:
-        x: 1.0
-        y: 1.0
-        z: -3
-      euler_angles:
-        x: -0
-        y: -0
-        z: 2.959788
-    - id: registed_goal_2
-      position:
-        x: 2.0
-        y: 1.0
-        z: -3
-      euler_angles:
-        x: 0
-        y: 0
-        z: -2.533017
-    - id: registed_goal_1
-      position:
-        x: -0.27491
-        y: -18.93001
-        z: -3
-      euler_angles:
-        x: 0
-        y: 0
-        z: -1.780379
-    - id: registed_goal_4
-      position:
-        x: -27.66374
-        y: -32.82571
-        z: -3
-      euler_angles:
-        x: -0
-        y: -0
-        z: 3.079683
-    - id: registed_goal_0
-      position:
-        x: -0.8908886
-        y: -2.370749
-        z: -3
-      euler_angles:
-        x: 0
-        y: 0
-        z: -1.833312
-    - id: 1
-      position:
-        x: -2.384186e-07
-        y: 0
-        z: 0
-      euler_angles:
-        x: -0
-        y: 0
-        z: -0
-      properties:
-        - key: stop
-          value: true
-        - key: goal_radius
-          value: 5.0
-      connections:
-        - 2
-    - id: 3
-      position:
-        x: 4
-        y: 5
-        z: 6
-      euler_angles:
-        x: -0
-        y: 0
-        z: -0
-      connections:
-        - 1
-    - id: 2
-      position:
-        x: 0.9999998
-        y: 1
-        z: 1
-      euler_angles:
-        x: 0.9999996
-        y: 1
-        z: 1
-      properties:
-        - key: goal_radius
-          value: 10.0
+  - euler_angles:
+      x: 0
+      y: 0
+      z: 2.959788
+    id: registed_goal_3
+    position:
+      x: 1.0
+      y: 1.0
+      z: -3
+  - euler_angles:
+      x: 0
+      y: 0
+      z: -2.533017
+    id: registed_goal_2
+    position:
+      x: 4.769366264343262
+      y: 0.48056602478027344
+      z: -3
+  - euler_angles:
+      x: 0
+      y: 0
+      z: -1.780379
+    id: registed_goal_1
+    position:
+      x: 5.10319709777832
+      y: -4.572482109069824
+      z: -3
+  - euler_angles:
+      x: 0
+      y: 0
+      z: 3.079683
+    id: registed_goal_4
+    position:
+      x: 3.240060806274414
+      y: -2.330770492553711
+      z: -3
+  - euler_angles:
+      x: 0
+      y: 0
+      z: -1.833312
+    id: registed_goal_0
+    position:
+      x: 0.15520823001861572
+      y: -4.695000171661377
+      z: -3
+  - connections:
+    - 2
+    euler_angles:
+      x: 0
+      y: 0
+      z: 0
+    id: 1
+    position:
+      x: 0.11905074119567871
+      y: -0.12742042541503906
+      z: 0
+    properties:
+    - key: stop
+      value: true
+    - key: goal_radius
+      value: 5.0
+  - connections:
+    - 1
+    euler_angles:
+      x: 0
+      y: 0
+      z: 0
+    id: 3
+    position:
+      x: 4.838858604431152
+      y: 4.2245941162109375
+      z: 6
+  - euler_angles:
+      x: 0.9999996
+      y: 1
+      z: 1
+    id: 2
+    position:
+      x: 1.7632348537445068
+      y: 4.076876640319824
+      z: 1
+    properties:
+    - key: goal_radius
+      value: 10.0

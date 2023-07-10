@@ -50,14 +50,31 @@ class waypoint_manager2_node(Node):
         self.server = InteractiveMarkerServer(self, 'marker_control')
 
         self.goal_msg = FollowWaypoints.Goal()
+        self.resend_wp_flag = False
+        self.goal_handle = None
 
 
     def callback(self):
         pass
 
     def send_wp_callback(self, request, response):
+        if self.resend_wp_flag:
+            # # self.action_client._cancel_goal_async(self.goal_handle)
+            # future = self.goal_handle.get_result_async()
+            # rclpy.spin_until_future_complete(self, future)
+            # self.action_client.destroy()
+            # self.action_client = ActionClient(
+            #     self,                     
+            #     FollowWaypoints,                
+            #     'FollowWaypoints' 
+            # )
+            # self.action_client.wait_for_server()
+            # self.future.cancel()
+            # self.goal_handle = None
+            pass
         self.send_goal()
         response.success = True
+        self.resend_wp_flag = True
         return response
 
     def save_wp_callback(self, request, response):
@@ -76,7 +93,7 @@ class waypoint_manager2_node(Node):
             with open(WAYPOINT_PATH, 'w') as yml:
                 yaml.dump(self.config, yml)
         else:
-            with open(WAYPOINT_PATH, 'w') as yml:
+            with open(WAYPOINT_SAVE_PATH, 'w') as yml:
                 yaml.dump(self.config, yml)
 
     def processFeedback(self, feedback):
@@ -183,8 +200,8 @@ class waypoint_manager2_node(Node):
 
         return q
 
-    def vizualize_wp(self):
-        # self.goal_msg = FollowWaypoints.Goal()
+    def apply_wp(self):
+        self.goal_msg = FollowWaypoints.Goal()
         pose_ = PoseStamped()
 
         waypoints = self.config['waypoint_server']['waypoints']
@@ -207,8 +224,9 @@ class waypoint_manager2_node(Node):
             self.makeMovingMarker(position, i)
     
     def send_goal(self):
-        self.action_client.wait_for_server()  
+        self.action_client.wait_for_server()
 
+        # print(len(self.goal_msg.poses))
         self.future = self.action_client.send_goal_async(self.goal_msg, feedback_callback=self.feedback_callback)
         self.future.add_done_callback(self.response_callback)
 
@@ -216,16 +234,19 @@ class waypoint_manager2_node(Node):
         print("feed back :", feedback.feedback.current_waypoint)
 
     def response_callback(self, future):
-        goal_handle = future.result()
-        if not goal_handle.accepted:
+        self.goal_handle = future.result()
+        if not self.goal_handle.accepted:
            return
 
-        self.result_future = goal_handle.get_result_async()
+        self.result_future = self.goal_handle.get_result_async()
         self.result_future.add_done_callback(self.result_callback)
 
     def result_callback(self, future):
         result = future.result().result
-        print("missed waypoints :", result.missed_waypoints[0])
+        try:
+            print("missed waypoints :", result.missed_waypoints[0])
+        except:
+            pass
         # self.server.shutdown()
         # rclpy.shutdown()
 
@@ -234,7 +255,7 @@ def main(args=None):
 
     action_client = waypoint_manager2_node()
 
-    action_client.vizualize_wp()
+    action_client.apply_wp()
     # action_client.send_goal()
 
     action_client.server.applyChanges()
