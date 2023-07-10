@@ -18,7 +18,7 @@ import numpy as np
 
 WAYPOINT_PATH = '/home/fmasa/ros2_ws/src/waypoint_manager2/config/waypoints/test.yaml'
 WAYPOINT_SAVE_PATH = '/home/fmasa/ros2_ws/src/waypoint_manager2/config/waypoints/test_output.yaml'
-WP_FEEDBACK_VISIBLE = True
+WP_FEEDBACK_VISIBLE = False
 OVERWRITE = True
 TIME_PERIOD = 0.1
 
@@ -163,7 +163,6 @@ class waypoint_manager2_node(Node):
         int_marker = InteractiveMarker()
         int_marker.header.frame_id = 'map'
         int_marker.pose.position = position
-        # int_marker.pose.orientation = orientation
         int_marker.scale = 1.0
 
         int_marker.name = str(i)
@@ -225,11 +224,11 @@ class waypoint_manager2_node(Node):
 
         if WP_FEEDBACK_VISIBLE:
             self.get_logger().info(
-                # f'{feedback.marker_name}: aligning position = {feedback.pose.position.x}, '
-                # f'{feedback.pose.position.y}, {feedback.pose.position.z} to '
-                # f'{pose.position.x}, {pose.position.y}, {pose.position.z}'
+                f'{feedback.marker_name}: aligning position = {feedback.pose.position.x}, '
+                f'{feedback.pose.position.y}, {feedback.pose.position.z} to '
+                f'{pose.position.x}, {pose.position.y}, {pose.position.z}'
                 # f'{feedback.pose.orientation.x}, {feedback.pose.orientation.y}, {feedback.pose.orientation.z}, {feedback.pose.orientation.w}'
-                f'{float(x)}, {float(y)}, {float(z)}'
+                # f'{float(x)}, {float(y)}, {float(z)}'
             )
 
         self.server.setPose(feedback.marker_name, pose)
@@ -276,14 +275,11 @@ class waypoint_manager2_node(Node):
 
         waypoints = self.config['waypoint_server']['waypoints']
         for i in range(len(waypoints)):
-            # print(waypoints[i]['position']['x'])
             pose_.header.frame_id = "map"
             pose_.pose.position.x = float(waypoints[i]['position']['x'])
             pose_.pose.position.y = float(waypoints[i]['position']['y'])
             pose_.pose.position.z = -0.01
             euler = waypoints[i]['euler_angles']
-            # q = self.quaternion_from_euler(float(euler['x']), float(euler['y']), float(euler['z']))
-            # q = self.quaternion_from_euler(0.0, 0.0, float(euler['z']))
             q = self.quaternion_from_euler(float(euler['x']), 0.0, 0.0)
             pose_.pose.orientation.x = q[0]
             pose_.pose.orientation.y = q[1]
@@ -292,7 +288,6 @@ class waypoint_manager2_node(Node):
             self.goal_msg.poses.append(deepcopy(pose_))
 
             # create marker
-            # q = self.quaternion_from_euler(0.0, 0.0, 0.0)
             position = Point(x=float(waypoints[i]['position']['x']), y=float(waypoints[i]['position']['y']), z=0.0)
             orientation = Quaternion(x=q[0], y=q[1], w=q[2], z=q[3])
             self.makeMovingMarker(i, position, orientation)
