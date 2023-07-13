@@ -11,7 +11,7 @@ import yaml
 import math
 import sys
 from visualization_msgs.msg import Marker, MarkerArray, InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
-from interactive_markers import InteractiveMarkerServer
+from interactive_markers import InteractiveMarkerServer, MenuHandler
 from geometry_msgs.msg import Point, Quaternion
 from std_srvs.srv import Trigger
 import numpy as np
@@ -21,6 +21,11 @@ WAYPOINT_SAVE_PATH = '/home/fmasa/ros2_ws/src/waypoint_manager2/config/waypoints
 WP_FEEDBACK_VISIBLE = False
 OVERWRITE = True
 TIME_PERIOD = 0.1
+
+menu_handler = MenuHandler()
+h_first_entry = 0
+h_mode_last = 0
+marker_pos = 0
 
 class waypoint_behavior:
     def __init__(self):
@@ -86,6 +91,9 @@ class waypoint_manager2_node(Node):
         self.goal_handle = None
 
         self.route_manager = route_manager()
+        self.initMenu()
+
+        self.num_wp = 0
 
     def callback(self):
         self.route_manager.marker_array = MarkerArray()
@@ -151,6 +159,52 @@ class waypoint_manager2_node(Node):
         marker.pose.orientation.w = orientation.w
         return marker
 
+    def deepCb(self, feedback):
+        self.get_logger().info('The deep sub-menu has been found.')
+
+    def initMenu(self):
+        global h_first_entry, h_mode_last
+        # h_first_entry = menu_handler.insert('First Entry')
+        # entry = menu_handler.insert('deep', parent=h_first_entry)
+        # entry = menu_handler.insert('sub', parent=entry)
+        # entry = menu_handler.insert('menu', parent=entry, callback=self.deepCb)
+
+        h_first_entry = menu_handler.insert('insert', callback=self.insert_callback)
+
+        # menu_handler.setCheckState(
+        #     menu_handler.insert('Show First Entry', callback=self.enableCb),
+        #     MenuHandler.CHECKED
+        # )
+
+        # sub_menu_handle = menu_handler.insert('Switch')
+        # for i in range(5):
+        #     s = 'Mode ' + str(i)
+        #     h_mode_last = menu_handler.insert(s, parent=sub_menu_handle, callback=self.modeCb)
+        #     menu_handler.setCheckState(h_mode_last, MenuHandler.UNCHECKED)
+        # # check the very last entry
+        # menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
+
+    def insert_callback(self, feedback):
+        p = feedback.pose.position
+        print(f'{feedback.marker_name} is now at {p.x}, {p.y}, {p.z}')
+
+        # register insert point
+        i = int(feedback.marker_name)
+        waypoints = self.config['waypoint_server']['waypoints']
+        waypoints.insert(i+1, copy.deepcopy(waypoints[i]))
+
+        waypoints[i+1]['position']['x'] = p.x + 0.3
+        waypoints[i+1]['position']['y'] = p.y 
+
+        # initialize server
+        self.server.clear()
+
+        # recreate interactive_marker
+        self.apply_wp()
+
+        # apply change
+        self.server.applyChanges()
+
     def normalizeQuaternion(self, quaternion_msg):
         norm = quaternion_msg.x**2 + quaternion_msg.y**2 + quaternion_msg.z**2 + quaternion_msg.w**2
         s = norm**(-0.5)
@@ -201,8 +255,16 @@ class waypoint_manager2_node(Node):
         arrow_control.always_visible = True
         int_marker.controls.append(arrow_control)
 
+        # make a menu
+        menu_control = InteractiveMarkerControl()
+        menu_control.interaction_mode = InteractiveMarkerControl.BUTTON
+        menu_control.always_visible = True
+        # menu_control.markers.append(self.makeBox(int_marker))
+        int_marker.controls.append(menu_control)
+
         # we want to use our special callback function
         self.server.insert(int_marker, feedback_callback=self.processFeedback)
+        menu_handler.apply(self.server, int_marker.name)
 
         # set different callback for POSE_UPDATE feedback
         self.server.setCallback(int_marker.name, self.alignMarker, InteractiveMarkerFeedback.POSE_UPDATE)
