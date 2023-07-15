@@ -138,16 +138,19 @@ class waypoint_manager2_node(Node):
         arrow_name = 'arrow' + str(i)
         if not arrow_name == feedback.control_name:
             if (not self.old_x == p.x) or (not self.old_y == p.y):
-                q = self.calc_direction(p.x, p.y)
+                q, e = self.calc_direction(p.x, p.y)
                 o.x = q[0]
                 o.y = q[1]
                 o.z = q[2]
                 o.w = q[3]
                 x, y, z = self.euler_from_quaternion(o)
                 waypoints = self.config['waypoint_server']['waypoints']
-                waypoints[i]['euler_angles']['x'] = float(x) #convert miss
-                waypoints[i]['euler_angles']['y'] = float(y)
-                waypoints[i]['euler_angles']['z'] = float(z)
+                # waypoints[i]['euler_angles']['x'] = float(x) #convert miss
+                # waypoints[i]['euler_angles']['y'] = float(y)
+                # waypoints[i]['euler_angles']['z'] = float(z)
+                waypoints[i]['euler_angles']['x'] = float(e[0]) #convert miss
+                waypoints[i]['euler_angles']['y'] = float(e[1])
+                waypoints[i]['euler_angles']['z'] = float(e[2])
                 self.server.clear()
                 self.apply_wp()
                 self.server.applyChanges()
@@ -312,6 +315,7 @@ class waypoint_manager2_node(Node):
         waypoints[i]['position']['y'] = feedback.pose.position.y
 
         # convert q to euler
+        # print(pose.orientation)
         x, y, z = self.euler_from_quaternion(pose.orientation)
         waypoints[i]['euler_angles']['x'] = float(x) #convert miss
         waypoints[i]['euler_angles']['y'] = float(y)
@@ -340,10 +344,11 @@ class waypoint_manager2_node(Node):
         dy = y - self.old_y
         angle = math.atan2(dy, dx)
         quat = self.quaternion_from_euler(0, 3.14, -angle)
+        euler = [0, 0, -angle]
         # print(angle)
         self.old_x = x
         self.old_y = y
-        return quat
+        return quat, euler
 
     def quaternion_from_euler(self, roll, pitch, yaw):
         r = R.from_euler('xyz', [roll, pitch, yaw], degrees=False)
