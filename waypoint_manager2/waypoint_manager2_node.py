@@ -10,15 +10,16 @@ from copy import deepcopy
 import yaml
 import math
 import sys
-from visualization_msgs.msg import Marker, MarkerArray, InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
+from visualization_msgs.msg import Marker, MarkerArray, InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback, InteractiveMarkerUpdate
 from interactive_markers import InteractiveMarkerServer, MenuHandler
-from geometry_msgs.msg import Point, Quaternion
+from geometry_msgs.msg import Point, Quaternion, Pose
 from std_srvs.srv import Trigger
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 WAYPOINT_PATH = '/home/fmasa/ros2_ws/src/waypoint_manager2/config/waypoints/test.yaml'
 WAYPOINT_SAVE_PATH = '/home/fmasa/ros2_ws/src/waypoint_manager2/config/waypoints/test_output.yaml'
-WP_FEEDBACK_VISIBLE = False
+WP_FEEDBACK_VISIBLE = True
 OVERWRITE = True
 TIME_PERIOD = 0.1
 
@@ -80,6 +81,7 @@ class waypoint_manager2_node(Node):
         self.send_wp_trigger_service = self.create_service(Trigger, 'waypoint_manager2/send_wp', self.send_wp_callback)
         self.save_wp_service = self.create_service(Trigger, 'waypoint_manager2/save_wp', self.save_wp_callback)
         self.route_pub = self.create_publisher(MarkerArray, 'waypoint_manager2/routes', 10)
+        self.update_pub = self.create_publisher(InteractiveMarkerUpdate, 'waypoint_manager2/update', 10)
 
         self.time_period = TIME_PERIOD
         self.tmr = self.create_timer(self.time_period, self.callback)
@@ -94,6 +96,8 @@ class waypoint_manager2_node(Node):
         self.initMenu()
 
         self.num_wp = 0
+
+        self.old_x, self.old_y = 1, 1
 
     def callback(self):
         self.route_manager.marker_array = MarkerArray()
@@ -127,9 +131,27 @@ class waypoint_manager2_node(Node):
 
     def processFeedback(self, feedback):
         p = feedback.pose.position
+        o = feedback.pose.orientation
         if WP_FEEDBACK_VISIBLE:
             print(f'{feedback.marker_name} is now at {p.x}, {p.y}, {p.z}')
-
+        i = int(feedback.marker_name)
+        arrow_name = 'arrow' + str(i)
+        if not arrow_name == feedback.control_name:
+            if (not self.old_x == p.x) or (not self.old_y == p.y):
+                q = self.calc_direction(p.x, p.y)
+                o.x = q[0]
+                o.y = q[1]
+                o.z = q[2]
+                o.w = q[3]
+                x, y, z = self.euler_from_quaternion(o)
+                waypoints = self.config['waypoint_server']['waypoints']
+                waypoints[i]['euler_angles']['x'] = float(x) #convert miss
+                waypoints[i]['euler_angles']['y'] = float(y)
+                waypoints[i]['euler_angles']['z'] = float(z)
+                self.server.clear()
+                self.apply_wp()
+                self.server.applyChanges()
+        
     def makeBox(self, msg):
         marker = Marker()
 
@@ -147,6 +169,7 @@ class waypoint_manager2_node(Node):
         marker = Marker()
 
         marker.type = Marker.ARROW
+        marker.action = Marker.ADD
         marker.scale.x = 0.5
         marker.scale.y = marker.scale.z = 0.05
         marker.color.r = 1.0
@@ -170,6 +193,8 @@ class waypoint_manager2_node(Node):
         # entry = menu_handler.insert('menu', parent=entry, callback=self.deepCb)
 
         h_first_entry = menu_handler.insert('insert', callback=self.insert_callback)
+        save_entry = menu_handler.insert('save_wp', callback=self.menu_save_wp)
+        start_entry = menu_handler.insert('start_wp_nav', callback=self.start_wp)
 
         # menu_handler.setCheckState(
         #     menu_handler.insert('Show First Entry', callback=self.enableCb),
@@ -183,6 +208,12 @@ class waypoint_manager2_node(Node):
         #     menu_handler.setCheckState(h_mode_last, MenuHandler.UNCHECKED)
         # # check the very last entry
         # menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
+
+    def start_wp(self, feedback):
+        self.send_goal()
+
+    def menu_save_wp(self, feedback):
+        self.save_waypoints()
 
     def insert_callback(self, feedback):
         p = feedback.pose.position
@@ -236,6 +267,7 @@ class waypoint_manager2_node(Node):
 
         # arrow control
         arrow_control = InteractiveMarkerControl()
+        arrow_control.name = 'arrow' + str(i)
         arrow_control.orientation.w = 1.0
         arrow_control.orientation.x = 0.0
         arrow_control.orientation.y = 1.0
@@ -274,62 +306,59 @@ class waypoint_manager2_node(Node):
         pose.position.z = 0.0
 
         i = int(feedback.marker_name)
+        arrow_name = 'arrow' + str(i)
         waypoints = self.config['waypoint_server']['waypoints']
         waypoints[i]['position']['x'] = feedback.pose.position.x
         waypoints[i]['position']['y'] = feedback.pose.position.y
 
         # convert q to euler
-        x, y, z = self.euler_from_quaternion(feedback.pose.orientation)
-        waypoints[i]['euler_angles']['x'] = float(z) #convert miss
+        x, y, z = self.euler_from_quaternion(pose.orientation)
+        waypoints[i]['euler_angles']['x'] = float(x) #convert miss
         waypoints[i]['euler_angles']['y'] = float(y)
         waypoints[i]['euler_angles']['z'] = float(z)  
 
-        if WP_FEEDBACK_VISIBLE:
-            self.get_logger().info(
-                f'{feedback.marker_name}: aligning position = {feedback.pose.position.x}, '
-                f'{feedback.pose.position.y}, {feedback.pose.position.z} to '
-                f'{pose.position.x}, {pose.position.y}, {pose.position.z}'
-                # f'{feedback.pose.orientation.x}, {feedback.pose.orientation.y}, {feedback.pose.orientation.z}, {feedback.pose.orientation.w}'
-                # f'{float(x)}, {float(y)}, {float(z)}'
-            )
+        # print(pose.orientation)
+        # print(feedback)
+
+        # if WP_FEEDBACK_VISIBLE:
+        #     self.get_logger().info(
+        #         f'{feedback.marker_name}: aligning position = {feedback.pose.position.x}, '
+        #         f'{feedback.pose.position.y}, {feedback.pose.position.z} to '
+        #         f'{pose.position.x}, {pose.position.y}, {pose.position.z}'
+        #         f'{feedback.pose.orientation.x}, {feedback.pose.orientation.y}, {feedback.pose.orientation.z}, {feedback.pose.orientation.w}'
+        #         f'{float(x)}, {float(y)}, {float(z)}'
+        #         f'{feedback}'
+        #     )
 
         self.server.setPose(feedback.marker_name, pose)
+        # self.server.clear()
+        # self.apply_wp()
         self.server.applyChanges()
+    
+    def calc_direction(self, x, y):
+        dx = x - self.old_x
+        dy = y - self.old_y
+        angle = math.atan2(dy, dx)
+        quat = self.quaternion_from_euler(0, 3.14, -angle)
+        # print(angle)
+        self.old_x = x
+        self.old_y = y
+        return quat
 
     def quaternion_from_euler(self, roll, pitch, yaw):
-        cy = math.cos(yaw * 0.5)
-        sy = math.sin(yaw * 0.5)
-        cp = math.cos(pitch * 0.5)
-        sp = math.sin(pitch * 0.5)
-        cr = math.cos(roll * 0.5)
-        sr = math.sin(roll * 0.5)
-
-        q = [0] * 4
-        q[0] = cy * cp * cr + sy * sp * sr
-        q[1] = cy * cp * sr - sy * sp * cr
-        q[2] = sy * cp * sr + cy * sp * cr
-        q[3] = sy * cp * cr - cy * sp * sr
-
+        r = R.from_euler('xyz', [roll, pitch, yaw], degrees=False)
+        q = r.as_quat()
         return q
 
+    # def quaternion_from_euler(self, roll, pitch, yaw):
+    #     euler = [roll, pitch, yaw]
+    #     quat = tf2.transformations.quaternion_from_euler(euler[0], euler[1], euler[2])
+    #     return quat
+  
     def euler_from_quaternion(self, quaternion):
-        x = quaternion.x
-        y = quaternion.y
-        z = quaternion.z
-        w = quaternion.w
-
-        sinr_cosp = 2 * (w * x + y * z)
-        cosr_cosp = 1 - 2 * (x * x + y * y)
-        roll = np.arctan2(sinr_cosp, cosr_cosp)
-
-        sinp = 2 * (w * y - z * x)
-        pitch = np.arcsin(sinp)
-
-        siny_cosp = 2 * (w * z + x * y)
-        cosy_cosp = 1 - 2 * (y * y + z * z)
-        yaw = np.arctan2(siny_cosp, cosy_cosp)
-
-        return roll, pitch, yaw
+        r = R.from_quat([quaternion.x, quaternion.y, quaternion.z, quaternion.w])
+        e = r.as_euler('xyz', degrees=False)
+        return e[0], e[1], e[2]
 
     def apply_wp(self):
         self.goal_msg = FollowWaypoints.Goal()
@@ -342,7 +371,8 @@ class waypoint_manager2_node(Node):
             pose_.pose.position.y = float(waypoints[i]['position']['y'])
             pose_.pose.position.z = -0.01
             euler = waypoints[i]['euler_angles']
-            q = self.quaternion_from_euler(float(euler['x']), 0.0, 0.0)
+            # q = self.quaternion_from_euler(float(euler['z']), float(euler['z']), float(euler['z']))
+            q = self.quaternion_from_euler(0.0, 0.0, float(euler['z']))
             pose_.pose.orientation.x = q[0]
             pose_.pose.orientation.y = q[1]
             pose_.pose.orientation.z = q[2]
