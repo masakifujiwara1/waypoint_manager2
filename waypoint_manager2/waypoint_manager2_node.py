@@ -134,26 +134,26 @@ class waypoint_manager2_node(Node):
         o = feedback.pose.orientation
         if WP_FEEDBACK_VISIBLE:
             print(f'{feedback.marker_name} is now at {p.x}, {p.y}, {p.z}')
-        i = int(feedback.marker_name)
-        arrow_name = 'arrow' + str(i)
-        if not arrow_name == feedback.control_name:
-            if (not self.old_x == p.x) or (not self.old_y == p.y):
-                q, e = self.calc_direction(p.x, p.y)
-                o.x = q[0]
-                o.y = q[1]
-                o.z = q[2]
-                o.w = q[3]
-                x, y, z = self.euler_from_quaternion(o)
-                waypoints = self.config['waypoint_server']['waypoints']
-                waypoints[i]['euler_angles']['x'] = float(x) #convert miss
-                waypoints[i]['euler_angles']['y'] = float(y)
-                waypoints[i]['euler_angles']['z'] = float(z)
+        # i = int(feedback.marker_name)
+        # arrow_name = 'arrow' + str(i)
+        # if not arrow_name == feedback.control_name:
+        #     if (not self.old_x == p.x) or (not self.old_y == p.y):
+        #         q, e = self.calc_direction(p.x, p.y)
+        #         o.x = q[0]
+        #         o.y = q[1]
+        #         o.z = q[2]
+        #         o.w = q[3]
+        #         x, y, z = self.euler_from_quaternion(o)
+        #         waypoints = self.config['waypoint_server']['waypoints']
+        #         waypoints[i]['euler_angles']['x'] = float(x) #convert miss
+        #         waypoints[i]['euler_angles']['y'] = float(y)
+        #         waypoints[i]['euler_angles']['z'] = float(z)
                 # waypoints[i]['euler_angles']['x'] = float(e[0]) #convert miss
                 # waypoints[i]['euler_angles']['y'] = float(e[1])
                 # waypoints[i]['euler_angles']['z'] = float(e[2])
-                self.server.clear()
-                self.apply_wp()
-                self.server.applyChanges()
+                # self.server.clear()
+                # self.apply_wp()
+                # self.server.applyChanges()
         
     def makeBox(self, msg):
         marker = Marker()
@@ -213,6 +213,9 @@ class waypoint_manager2_node(Node):
         # menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
 
     def start_wp(self, feedback):
+        self.server.clear()
+        self.apply_wp()
+        self.server.applyChanges()
         self.send_goal()
 
     def menu_save_wp(self, feedback):
@@ -318,7 +321,7 @@ class waypoint_manager2_node(Node):
         # convert q to euler
         # print(pose.orientation)
         x, y, z = self.euler_from_quaternion(pose.orientation)
-        waypoints[i]['euler_angles']['x'] = float(x) #convert miss
+        waypoints[i]['euler_angles']['x'] = float(z) #convert miss
         waypoints[i]['euler_angles']['y'] = float(y)
         waypoints[i]['euler_angles']['z'] = float(z)  
 
@@ -387,6 +390,7 @@ class waypoint_manager2_node(Node):
 
             # create marker
             position = Point(x=float(waypoints[i]['position']['x']), y=float(waypoints[i]['position']['y']), z=0.0)
+            # q = self.quaternion_from_euler(float(euler['z']), 0.0, 0.0)
             orientation = Quaternion(x=q[0], y=q[1], w=q[2], z=q[3])
             self.makeMovingMarker(i, position, orientation)
     
