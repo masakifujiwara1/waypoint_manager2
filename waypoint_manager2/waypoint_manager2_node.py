@@ -145,12 +145,12 @@ class waypoint_manager2_node(Node):
                 o.w = q[3]
                 x, y, z = self.euler_from_quaternion(o)
                 waypoints = self.config['waypoint_server']['waypoints']
-                # waypoints[i]['euler_angles']['x'] = float(x) #convert miss
-                # waypoints[i]['euler_angles']['y'] = float(y)
-                # waypoints[i]['euler_angles']['z'] = float(z)
-                waypoints[i]['euler_angles']['x'] = float(e[0]) #convert miss
-                waypoints[i]['euler_angles']['y'] = float(e[1])
-                waypoints[i]['euler_angles']['z'] = float(e[2])
+                waypoints[i]['euler_angles']['x'] = float(x) #convert miss
+                waypoints[i]['euler_angles']['y'] = float(y)
+                waypoints[i]['euler_angles']['z'] = float(z)
+                # waypoints[i]['euler_angles']['x'] = float(e[0]) #convert miss
+                # waypoints[i]['euler_angles']['y'] = float(e[1])
+                # waypoints[i]['euler_angles']['z'] = float(e[2])
                 self.server.clear()
                 self.apply_wp()
                 self.server.applyChanges()
@@ -251,6 +251,7 @@ class waypoint_manager2_node(Node):
         int_marker = InteractiveMarker()
         int_marker.header.frame_id = 'map'
         int_marker.pose.position = position
+        int_marker.pose.orientation = orientation
         int_marker.scale = 1.0
 
         int_marker.name = str(i)
