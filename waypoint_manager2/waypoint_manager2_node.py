@@ -179,14 +179,35 @@ class waypoint_manager2_node(Node):
         marker.color.g = 0.0
         marker.color.b = 0.0
         marker.color.a = 1.0
-        marker.pose.orientation.x = orientation.x
-        marker.pose.orientation.y = orientation.y
-        marker.pose.orientation.z = orientation.z
-        marker.pose.orientation.w = orientation.w
+        # marker.pose.orientation.x = orientation.x
+        # marker.pose.orientation.y = orientation.y
+        # marker.pose.orientation.z = orientation.z
+        # marker.pose.orientation.w = orientation.w
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 0.0
         return marker
 
     def deepCb(self, feedback):
         self.get_logger().info('The deep sub-menu has been found.')
+
+    def modeCb(self, feedback):
+        global h_mode_last
+        menu_handler.setCheckState(h_mode_last, MenuHandler.UNCHECKED)
+        h_mode_last = feedback.menu_entry_id
+        # print(feedback.menu_entry_id)
+
+        # menu_entry_id: Stop_ON > 5, Stop_OFF > 6
+        menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
+        propertys = self.config['waypoint_server']['waypoints']['propertys']
+        for i in range(len(propertys)):
+            if propertys[i]['key'] = 
+
+        # node.get_logger().info('Switching to menu entry #' + str(h_mode_last))
+        menu_handler.reApply(self.server)
+        print('DONE')
+        self.server.applyChanges()
 
     def initMenu(self):
         global h_first_entry, h_mode_last
@@ -204,13 +225,17 @@ class waypoint_manager2_node(Node):
         #     MenuHandler.CHECKED
         # )
 
-        # sub_menu_handle = menu_handler.insert('Switch')
-        # for i in range(5):
-        #     s = 'Mode ' + str(i)
-        #     h_mode_last = menu_handler.insert(s, parent=sub_menu_handle, callback=self.modeCb)
-        #     menu_handler.setCheckState(h_mode_last, MenuHandler.UNCHECKED)
-        # # check the very last entry
-        # menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
+        sub_menu_handle = menu_handler.insert('Stop_wp')
+        for i in range(2):
+            if i == 0:
+                s = 'Stop_ON'
+            else:
+                s = 'Stop_OFF'
+            # s = 'Mode_ ' + str(i)
+            h_mode_last = menu_handler.insert(s, parent=sub_menu_handle, callback=self.modeCb)
+            menu_handler.setCheckState(h_mode_last, MenuHandler.UNCHECKED)
+        # check the very last entry
+        menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
 
     def start_wp(self, feedback):
         self.server.clear()
@@ -254,7 +279,7 @@ class waypoint_manager2_node(Node):
         int_marker = InteractiveMarker()
         int_marker.header.frame_id = 'map'
         int_marker.pose.position = position
-        int_marker.pose.orientation = orientation
+        int_marker.pose.orientation = copy.deepcopy(orientation)
         int_marker.scale = 1.0
 
         int_marker.name = str(i)
@@ -321,9 +346,9 @@ class waypoint_manager2_node(Node):
         # convert q to euler
         # print(pose.orientation)
         x, y, z = self.euler_from_quaternion(pose.orientation)
-        waypoints[i]['euler_angles']['x'] = float(z) #convert miss
-        waypoints[i]['euler_angles']['y'] = float(y)
-        waypoints[i]['euler_angles']['z'] = float(z)  
+        waypoints[i]['euler_angles']['x'] = copy.deepcopy(float(x)) #convert miss
+        waypoints[i]['euler_angles']['y'] = copy.deepcopy(float(y))
+        waypoints[i]['euler_angles']['z'] = copy.deepcopy(float(z)) 
 
         # print(pose.orientation)
         # print(feedback)
@@ -390,8 +415,8 @@ class waypoint_manager2_node(Node):
 
             # create marker
             position = Point(x=float(waypoints[i]['position']['x']), y=float(waypoints[i]['position']['y']), z=0.0)
-            # q = self.quaternion_from_euler(float(euler['z']), 0.0, 0.0)
-            orientation = Quaternion(x=q[0], y=q[1], w=q[2], z=q[3])
+            # q = self.quaternion_from_euler(0.0, 0.0, float(euler['z']))
+            orientation = copy.deepcopy(Quaternion(x=q[0], y=q[1], w=q[2], z=q[3]))
             self.makeMovingMarker(i, position, orientation)
     
     def send_goal(self):
