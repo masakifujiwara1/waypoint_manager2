@@ -1,0 +1,38 @@
+waypoint_server:
+  position:
+    x: 1
+    y: 2
+    z: 3
+  quaternion:
+    w: 0
+    x: 0
+    y: 0
+    z: 0
+  scale: 1
+  waypoints:
+  - id: registed_goal_3
+    position:
+      x: 1.7003469467163086
+      y: 0.5840309858322144
+      z: -3
+    properties:
+    - key: goal_radius
+      value: 10.0
+    quaternion:
+      w: 0.0
+      x: 0.3086455782957252
+      y: 0.9511767831808486
+      z: 0.0007574477192388104
+  - id: registed_goal_3
+    position:
+      x: 4.5360870361328125
+      y: 0.5934092998504639
+      z: -3
+    properties:
+    - key: goal_radius
+      value: 10.0
+    quaternion:
+      w: 0.0
+      x: -0.36381227739329114
+      y: 0.931471949487303
+      z: 0.0007417562288628111

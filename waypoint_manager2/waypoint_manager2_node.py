@@ -200,9 +200,9 @@ class waypoint_manager2_node(Node):
 
         # menu_entry_id: Stop_ON > 5, Stop_OFF > 6
         menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
-        propertys = self.config['waypoint_server']['waypoints']['propertys']
-        for i in range(len(propertys)):
-            if propertys[i]['key'] = 
+        # propertys = self.config['waypoint_server']['waypoints']['propertys']
+        # for i in range(len(propertys)):
+        #     if propertys[i]['key'] = 
 
         # node.get_logger().info('Switching to menu entry #' + str(h_mode_last))
         menu_handler.reApply(self.server)
