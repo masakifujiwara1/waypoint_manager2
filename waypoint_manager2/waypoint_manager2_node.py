@@ -4,9 +4,10 @@ import rclpy
 import copy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from nav2_msgs.action import FollowWaypoints
+from nav2_msgs.action import FollowWaypoints, NavigateToPose
 from geometry_msgs.msg import PoseStamped
 from copy import deepcopy
+import action_msgs
 import yaml
 import math
 import sys
@@ -17,16 +18,19 @@ from std_srvs.srv import Trigger
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-WAYPOINT_PATH = '/home/fmasa/ros2_ws/src/waypoint_manager2/config/waypoints/test.yaml'
-WAYPOINT_SAVE_PATH = '/home/fmasa/ros2_ws/src/waypoint_manager2/config/waypoints/test_output.yaml'
+WAYPOINT_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test.yaml'
+WAYPOINT_SAVE_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test_output.yaml'
 WP_FEEDBACK_VISIBLE = True
 OVERWRITE = True
 TIME_PERIOD = 0.1
+GOAL_RADIUS = 1.0
 
 menu_handler = MenuHandler()
 h_first_entry = 0
 h_mode_last = 0
 marker_pos = 0
+
+current_waypoint = 0
 
 class waypoint_behavior:
     def __init__(self):
@@ -72,9 +76,14 @@ class waypoint_manager2_node(Node):
 
         self.action_client = ActionClient(
             self,                     
-            FollowWaypoints,                
-            'FollowWaypoints' 
+            NavigateToPose,                
+            '/navigate_to_pose' 
         )
+        # self.action_client = ActionClient(
+        #     self,                     
+        #     FollowWaypoints,                
+        #     'FollowWaypoints' 
+        # )
         self.config = {}
         self.load_waypoints()
 
@@ -88,7 +97,8 @@ class waypoint_manager2_node(Node):
 
         self.server = InteractiveMarkerServer(self, 'waypoint_manager2')
 
-        self.goal_msg = FollowWaypoints.Goal()
+        # self.goal_msg = FollowWaypoints.Goal()
+        self.goal_msg = NavigateToPose.Goal()
         self.resend_wp_flag = False
         self.goal_handle = None
 
@@ -395,7 +405,8 @@ class waypoint_manager2_node(Node):
         return e[0], e[1], e[2]
 
     def apply_wp(self):
-        self.goal_msg = FollowWaypoints.Goal()
+        self.goal_msg = NavigateToPose.Goal()
+        # self.goal_msg = FollowWaypoints.Goal()
         pose_ = PoseStamped()
 
         waypoints = self.config['waypoint_server']['waypoints']
@@ -411,7 +422,11 @@ class waypoint_manager2_node(Node):
             pose_.pose.orientation.y = q[1]
             pose_.pose.orientation.z = q[2]
             pose_.pose.orientation.w = q[3]
-            self.goal_msg.poses.append(deepcopy(pose_))
+            # self.goal_msg.poses.append(deepcopy(pose_))
+
+            if i == current_waypoint:
+                print(i, current_waypoint)
+                self.goal_msg.pose = deepcopy(pose_)
 
             # create marker
             position = Point(x=float(waypoints[i]['position']['x']), y=float(waypoints[i]['position']['y']), z=0.0)
@@ -427,7 +442,11 @@ class waypoint_manager2_node(Node):
         self.future.add_done_callback(self.response_callback)
 
     def feedback_callback(self, feedback):
-        print("feed back :", feedback.feedback.current_waypoint)
+        # print("current_pose :", feedback.feedback.current_pose)
+        print("navigation_time :", feedback.feedback.navigation_time)
+        print("number_of_recoveries :", feedback.feedback.number_of_recoveries)
+        print("distance_remaining :", feedback.feedback.distance_remaining)
+        # self.get_logger().info('Received feedback: {0}'.format(feedback.feedback.navigation_time))
 
     def response_callback(self, future):
         self.goal_handle = future.result()
@@ -439,12 +458,17 @@ class waypoint_manager2_node(Node):
 
     def result_callback(self, future):
         result = future.result().result
-        try:
-            print("missed waypoints :", result.missed_waypoints[0])
-        except:
-            pass
+        status = future.result().status
+        # try:
+        #     print("missed waypoints :", result.missed_waypoints[0])
+        # except:
+        #     pass
         # self.server.shutdown()
         # rclpy.shutdown()
+        if status == action_msgs.msg.GoalStatus.STATUS_SUCCEEDED:
+            self.get_logger().info('Goal succeeded!')
+        else:
+            self.get_logger().info('Goal failed!')
 
 def main(args=None):
     rclpy.init(args=args)
