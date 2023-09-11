@@ -196,14 +196,14 @@ class waypoint_manager2_node(Node):
         marker.color.g = 0.0
         marker.color.b = 0.0
         marker.color.a = 1.0
-        # marker.pose.orientation.x = orientation.x
-        # marker.pose.orientation.y = orientation.y
-        # marker.pose.orientation.z = orientation.z
-        # marker.pose.orientation.w = orientation.w
-        marker.pose.orientation.x = 0.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 0.0
+        marker.pose.orientation.x = orientation.x
+        marker.pose.orientation.y = orientation.y
+        marker.pose.orientation.z = orientation.z
+        marker.pose.orientation.w = orientation.w
+        # marker.pose.orientation.x = 0.0
+        # marker.pose.orientation.y = 0.0
+        # marker.pose.orientation.z = 0.0
+        # marker.pose.orientation.w = 0.0
         return marker
 
     def deepCb(self, feedback):
@@ -417,14 +417,15 @@ class waypoint_manager2_node(Node):
         pose_ = PoseStamped()
 
         waypoints = self.config['waypoint_server']['waypoints']
+        # for i in range(1):
         for i in range(len(waypoints)):
             pose_.header.frame_id = "map"
             pose_.pose.position.x = float(waypoints[i]['position']['x'])
             pose_.pose.position.y = float(waypoints[i]['position']['y'])
             pose_.pose.position.z = -0.01
             euler = waypoints[i]['euler_angles']
-            # q = self.quaternion_from_euler(float(euler['z']), float(euler['z']), float(euler['z']))
-            q = self.quaternion_from_euler(0.0, 0.0, float(euler['z']))
+            q = self.quaternion_from_euler(float(euler['x']), float(euler['y']), float(euler['z']))
+            # q = self.quaternion_from_euler(0.0, 0.0, float(euler['z']))
             pose_.pose.orientation.x = q[0]
             pose_.pose.orientation.y = q[1]
             pose_.pose.orientation.z = q[2]
@@ -488,7 +489,8 @@ class waypoint_manager2_node(Node):
         # print(self.nav_time.sec)
 
         waypoints = self.config['waypoint_server']['waypoints']
-        if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and CURRENT_WAYPOINT < len(waypoints):
+        if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 2.0 and CURRENT_WAYPOINT < len(waypoints) - 1:
+        # if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and CURRENT_WAYPOINT < 0:
             CURRENT_WAYPOINT += 1
             self.server.clear()
             self.apply_wp()
