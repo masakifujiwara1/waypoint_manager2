@@ -23,14 +23,15 @@ WAYPOINT_SAVE_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test_
 WP_FEEDBACK_VISIBLE = True
 OVERWRITE = True
 TIME_PERIOD = 0.1
-GOAL_RADIUS = 1.0
+GOAL_RADIUS = 0.5
 
 menu_handler = MenuHandler()
 h_first_entry = 0
 h_mode_last = 0
 marker_pos = 0
 
-current_waypoint = 0
+CURRENT_WAYPOINT = 0
+# DISTANCE = None
 
 class waypoint_behavior:
     def __init__(self):
@@ -109,10 +110,16 @@ class waypoint_manager2_node(Node):
 
         self.old_x, self.old_y = 1, 1
 
+        self.sum_nav_time = 0
+        self.sum_rec_num = 0
+        self.distance = 0
+
     def callback(self):
         self.route_manager.marker_array = MarkerArray()
         self.route_manager.updateRoute(self.config)
         self.route_pub.publish(self.route_manager.marker_array)
+
+        # self.is_reached_goal(self.distance)
 
     def send_wp_callback(self, request, response):
         if self.resend_wp_flag:
@@ -424,8 +431,8 @@ class waypoint_manager2_node(Node):
             pose_.pose.orientation.w = q[3]
             # self.goal_msg.poses.append(deepcopy(pose_))
 
-            if i == current_waypoint:
-                print(i, current_waypoint)
+            if i == CURRENT_WAYPOINT:
+                # print(i, current_waypoint)
                 self.goal_msg.pose = deepcopy(pose_)
 
             # create marker
@@ -435,17 +442,22 @@ class waypoint_manager2_node(Node):
             self.makeMovingMarker(i, position, orientation)
     
     def send_goal(self):
-        self.action_client.wait_for_server()
+        # self.action_client.wait_for_server()
 
         # print(len(self.goal_msg.poses))
         self.future = self.action_client.send_goal_async(self.goal_msg, feedback_callback=self.feedback_callback)
         self.future.add_done_callback(self.response_callback)
 
     def feedback_callback(self, feedback):
+        # global DISTANCE
         # print("current_pose :", feedback.feedback.current_pose)
         print("navigation_time :", feedback.feedback.navigation_time)
         print("number_of_recoveries :", feedback.feedback.number_of_recoveries)
         print("distance_remaining :", feedback.feedback.distance_remaining)
+        # self.is_reached_goal(feedback.feedback.distance_remaining)
+        self.distance = feedback.feedback.distance_remaining
+        self.nav_time = feedback.feedback.navigation_time
+        self.is_reached_goal()
         # self.get_logger().info('Received feedback: {0}'.format(feedback.feedback.navigation_time))
 
     def response_callback(self, future):
@@ -469,6 +481,19 @@ class waypoint_manager2_node(Node):
             self.get_logger().info('Goal succeeded!')
         else:
             self.get_logger().info('Goal failed!')
+
+    def is_reached_goal(self):
+        global CURRENT_WAYPOINT
+        # this place insert process of exist goal radius settings 
+        # print(self.nav_time.sec)
+
+        waypoints = self.config['waypoint_server']['waypoints']
+        if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and CURRENT_WAYPOINT < len(waypoints):
+            CURRENT_WAYPOINT += 1
+            self.server.clear()
+            self.apply_wp()
+            self.server.applyChanges()
+            self.send_goal()
 
 def main(args=None):
     rclpy.init(args=args)
