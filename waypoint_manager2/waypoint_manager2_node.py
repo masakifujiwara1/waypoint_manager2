@@ -233,14 +233,27 @@ class waypoint_manager2_node(Node):
         menu_handler.setCheckState(radius_mode_last, MenuHandler.UNCHECKED)
         radius_mode_last = feedback.menu_entry_id
         print(feedback.menu_entry_id)
-        print(feedback.marker_name)
+        print(int(feedback.marker_name))
 
         # menu_entry_id: 0.5 -> 8, 0.75 -> 9, 1.0 -> 10, 1.5 -> 11
+        waypoints = self.config['waypoint_server']['waypoints']
+        if feedback.menu_entry_id == 8:
+            waypoints[int(feedback.marker_name)]['properties'] = {'goal_radius': 0.5}
+        elif feedback.menu_entry_id == 9:
+            waypoints[int(feedback.marker_name)]['properties'] = {'goal_radius': 0.75}
+        elif feedback.menu_entry_id == 10:
+            waypoints[int(feedback.marker_name)]['properties'] = {'goal_radius': 1.0}
+        elif feedback.menu_entry_id == 11:
+            waypoints[int(feedback.marker_name)]['properties'] = {'goal_radius': 1.5}
+
         menu_handler.setCheckState(radius_mode_last, MenuHandler.CHECKED)
 
         menu_handler.reApply(self.server)
         print('Diameter mode DONE')
+        self.server.clear()
+        self.apply_wp()
         self.server.applyChanges()
+        
 
     def initMenu(self):
         global h_first_entry, h_mode_last, radius_mode_last
