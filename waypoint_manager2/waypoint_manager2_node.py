@@ -23,7 +23,7 @@ WAYPOINT_SAVE_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test_
 WP_FEEDBACK_VISIBLE = True
 OVERWRITE = True
 TIME_PERIOD = 0.1
-GOAL_RADIUS = 0.5
+# GOAL_RADIUS = 0.5
 
 menu_handler = MenuHandler()
 h_first_entry = 0
@@ -185,25 +185,25 @@ class waypoint_manager2_node(Node):
         marker.color.a = 0.6
         return marker
 
-    def makeArrow(self, orientation):
+    def makeArrow(self, orientation, msg):
         marker = Marker()
 
         marker.type = Marker.ARROW
         marker.action = Marker.ADD
-        marker.scale.x = 0.5
+        marker.scale.x = msg.scale / 2
         marker.scale.y = marker.scale.z = 0.05
         marker.color.r = 1.0
         marker.color.g = 0.0
         marker.color.b = 0.0
         marker.color.a = 1.0
-        marker.pose.orientation.x = orientation.x
-        marker.pose.orientation.y = orientation.y
-        marker.pose.orientation.z = orientation.z
-        marker.pose.orientation.w = orientation.w
-        # marker.pose.orientation.x = 0.0
-        # marker.pose.orientation.y = 0.0
-        # marker.pose.orientation.z = 0.0
-        # marker.pose.orientation.w = 0.0
+        # marker.pose.orientation.x = orientation.x
+        # marker.pose.orientation.y = orientation.y
+        # marker.pose.orientation.z = orientation.z
+        # marker.pose.orientation.w = orientation.w
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 0.0
         return marker
 
     def deepCb(self, feedback):
@@ -297,7 +297,16 @@ class waypoint_manager2_node(Node):
         int_marker.header.frame_id = 'map'
         int_marker.pose.position = position
         int_marker.pose.orientation = copy.deepcopy(orientation)
-        int_marker.scale = 1.0
+
+        waypoints = self.config['waypoint_server']['waypoints']
+
+        if 'properties' in waypoints[i]:
+            print('goal_radius' in waypoints[i])
+            if 'goal_radius' in waypoints[i]['properties']:
+                int_marker.scale = copy.deepcopy(float(waypoints[i]['properties']['goal_radius']))
+                print(float(waypoints[i]['properties']['goal_radius']))
+        else:
+            int_marker.scale = 1.0
 
         int_marker.name = str(i)
         int_marker.description = 'waypoints' + str(i)
@@ -332,7 +341,7 @@ class waypoint_manager2_node(Node):
         int_marker.controls.append(control)
 
         # make a arrow
-        arrow_control.markers.append(self.makeArrow(orientation))
+        arrow_control.markers.append(self.makeArrow(orientation, int_marker))
         arrow_control.always_visible = True
         int_marker.controls.append(arrow_control)
 
@@ -487,9 +496,18 @@ class waypoint_manager2_node(Node):
         global CURRENT_WAYPOINT
         # this place insert process of exist goal radius settings 
         # print(self.nav_time.sec)
+        GOAL_RADIUS = 0.5
 
         waypoints = self.config['waypoint_server']['waypoints']
-        if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 2.0 and CURRENT_WAYPOINT < len(waypoints) - 1:
+
+        # set goal_radius
+        if 'properties' in waypoints[CURRENT_WAYPOINT]:
+            if 'goal_radius' in waypoints[CURRENT_WAYPOINT]['properties']:
+                GOAL_RADIUS = copy.deepcopy(float(waypoints[CURRENT_WAYPOINT]['properties']['goal_radius']) / 2)
+        else:
+            GOAL_RADIUS = 0.5
+
+        if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 3.0 and CURRENT_WAYPOINT < len(waypoints) - 1:
         # if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and CURRENT_WAYPOINT < 0:
             CURRENT_WAYPOINT += 1
             self.server.clear()

@@ -90,6 +90,8 @@ waypoint_server:
       x: 0.7087254524230957
       y: 0.5874571800231934
       z: 6
+    properties: 
+      goal_radius: 0.5
   - euler_angles:
       x: 0.0
       y: 0.0
