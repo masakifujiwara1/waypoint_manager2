@@ -28,6 +28,8 @@ TIME_PERIOD = 0.1
 menu_handler = MenuHandler()
 h_first_entry = 0
 h_mode_last = 0
+radius_mode_last = 0
+
 marker_pos = 0
 
 CURRENT_WAYPOINT = 0
@@ -226,8 +228,22 @@ class waypoint_manager2_node(Node):
         print('DONE')
         self.server.applyChanges()
 
+    def modeCb_radius(self, feedback):
+        global radius_mode_last
+        menu_handler.setCheckState(radius_mode_last, MenuHandler.UNCHECKED)
+        radius_mode_last = feedback.menu_entry_id
+        print(feedback.menu_entry_id)
+        print(feedback.marker_name)
+
+        # menu_entry_id: 0.5 -> 8, 0.75 -> 9, 1.0 -> 10, 1.5 -> 11
+        menu_handler.setCheckState(radius_mode_last, MenuHandler.CHECKED)
+
+        menu_handler.reApply(self.server)
+        print('Diameter mode DONE')
+        self.server.applyChanges()
+
     def initMenu(self):
-        global h_first_entry, h_mode_last
+        global h_first_entry, h_mode_last, radius_mode_last
         # h_first_entry = menu_handler.insert('First Entry')
         # entry = menu_handler.insert('deep', parent=h_first_entry)
         # entry = menu_handler.insert('sub', parent=entry)
@@ -253,6 +269,22 @@ class waypoint_manager2_node(Node):
             menu_handler.setCheckState(h_mode_last, MenuHandler.UNCHECKED)
         # check the very last entry
         menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
+
+        sub_menu_handle_radius = menu_handler.insert('Goal_diameter')
+        for i in range(4):
+            if i == 0:
+                s = '0.5'
+            if i == 1:
+                s = '0.75'
+            if i == 2:
+                s = '1.0'
+            if i == 3:
+                s = '1.5'
+            # s = 'Mode_ ' + str(i)
+            radius_mode_last = menu_handler.insert(s, parent=sub_menu_handle_radius, callback=self.modeCb_radius)
+            menu_handler.setCheckState(radius_mode_last, MenuHandler.UNCHECKED)
+        # check the very last entry
+        menu_handler.setCheckState(radius_mode_last, MenuHandler.CHECKED)
 
     def start_wp(self, feedback):
         self.server.clear()
