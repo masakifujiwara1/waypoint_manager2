@@ -174,17 +174,23 @@ class waypoint_manager2_node(Node):
                 # self.apply_wp()
                 # self.server.applyChanges()
         
-    def makeBox(self, msg):
+    def makeBox(self, msg, flag):
         marker = Marker()
 
         marker.type = Marker.CYLINDER
         marker.scale.x = msg.scale
         marker.scale.y = msg.scale
         marker.scale.z = 0.01
-        marker.color.r = 0.0
-        marker.color.g = 1.0
-        marker.color.b = 0.0
-        marker.color.a = 0.6
+        if flag:
+            marker.color.r = 1.0
+            marker.color.g = 0.0
+            marker.color.b = 0.0
+            marker.color.a = 0.6
+        else:
+            marker.color.r = 0.0
+            marker.color.g = 1.0
+            marker.color.b = 0.0
+            marker.color.a = 0.6
         return marker
 
     def makeArrow(self, orientation, msg):
@@ -218,6 +224,12 @@ class waypoint_manager2_node(Node):
         # print(feedback.menu_entry_id)
 
         # menu_entry_id: Stop_ON > 5, Stop_OFF > 6
+        waypoints = self.config['waypoint_server']['waypoints']
+        if feedback.menu_entry_id == 5:
+            waypoints[int(feedback.marker_name)]['properties'].update(Stop_wp = 'Stop_ON')
+        elif feedback.menu_entry_id == 6:
+            waypoints[int(feedback.marker_name)]['properties'].update(Stop_wp = 'Stop_OFF')
+
         menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
         # propertys = self.config['waypoint_server']['waypoints']['propertys']
         # for i in range(len(propertys)):
@@ -225,31 +237,32 @@ class waypoint_manager2_node(Node):
 
         # node.get_logger().info('Switching to menu entry #' + str(h_mode_last))
         menu_handler.reApply(self.server)
-        print('DONE')
+        # print('DONE')
+        self.apply_wp()
         self.server.applyChanges()
 
     def modeCb_radius(self, feedback):
         global radius_mode_last
         menu_handler.setCheckState(radius_mode_last, MenuHandler.UNCHECKED)
         radius_mode_last = feedback.menu_entry_id
-        print(feedback.menu_entry_id)
-        print(int(feedback.marker_name))
+        # print(feedback.menu_entry_id)
+        # print(int(feedback.marker_name))
 
         # menu_entry_id: 0.5 -> 8, 0.75 -> 9, 1.0 -> 10, 1.5 -> 11
         waypoints = self.config['waypoint_server']['waypoints']
         if feedback.menu_entry_id == 8:
-            waypoints[int(feedback.marker_name)]['properties'] = {'goal_radius': 0.5}
+            waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 0.5)
         elif feedback.menu_entry_id == 9:
-            waypoints[int(feedback.marker_name)]['properties'] = {'goal_radius': 0.75}
+            waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 0.75)
         elif feedback.menu_entry_id == 10:
-            waypoints[int(feedback.marker_name)]['properties'] = {'goal_radius': 1.0}
+            waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 1.0)
         elif feedback.menu_entry_id == 11:
-            waypoints[int(feedback.marker_name)]['properties'] = {'goal_radius': 1.5}
+            waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 1.5)
 
         menu_handler.setCheckState(radius_mode_last, MenuHandler.CHECKED)
 
         menu_handler.reApply(self.server)
-        print('Diameter mode DONE')
+        # print('Diameter mode DONE')
         self.server.clear()
         self.apply_wp()
         self.server.applyChanges()
@@ -343,15 +356,24 @@ class waypoint_manager2_node(Node):
         int_marker.pose.position = position
         int_marker.pose.orientation = copy.deepcopy(orientation)
 
+        stop_flag = False
+
         waypoints = self.config['waypoint_server']['waypoints']
 
         if 'properties' in waypoints[i]:
-            print('goal_radius' in waypoints[i])
+            # print('goal_radius' in waypoints[i])
             if 'goal_radius' in waypoints[i]['properties']:
-                int_marker.scale = copy.deepcopy(float(waypoints[i]['properties']['goal_radius']))
-                print(float(waypoints[i]['properties']['goal_radius']))
+                int_marker.scale = float(waypoints[i]['properties']['goal_radius'])
+                # print(float(waypoints[i]['properties']['goal_radius']))
         else:
             int_marker.scale = 1.0
+
+        if 'properties' in waypoints[i]:
+            if 'Stop_wp' in waypoints[i]['properties']:
+                if waypoints[i]['properties']['Stop_wp'] == 'Stop_ON':
+                    stop_flag = True
+        else:
+            stop_flag = False
 
         int_marker.name = str(i)
         int_marker.description = 'waypoints' + str(i)
@@ -381,7 +403,7 @@ class waypoint_manager2_node(Node):
         int_marker.controls.append(copy.deepcopy(arrow_control))
 
         # make a box which also moves in the plane
-        control.markers.append(self.makeBox(int_marker))
+        control.markers.append(self.makeBox(int_marker, stop_flag))
         control.always_visible = True
         int_marker.controls.append(control)
 

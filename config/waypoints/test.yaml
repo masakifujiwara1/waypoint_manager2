@@ -18,7 +18,7 @@ waypoint_server:
       x: 1.757054328918457
       y: -0.6510717868804932
       z: -3
-    properties: 
+    properties:
       goal_radius: 0.75
   - euler_angles:
       x: 0.0
@@ -77,10 +77,8 @@ waypoint_server:
       y: 0.5448393821716309
       z: 0
     properties:
-    - key: stop
-      value: true
-    - key: goal_radius
-      value: 5.0
+      Stop_wp: Stop_ON
+      goal_radius: 0.5
   - connections:
     - 1
     euler_angles:
@@ -89,10 +87,10 @@ waypoint_server:
       z: 3.098834660601919
     id: 3
     position:
-      x: 0.7087254524230957
-      y: 0.5874571800231934
+      x: 1.369796872138977
+      y: 0.6522080898284912
       z: 6
-    properties: 
+    properties:
       goal_radius: 0.5
   - euler_angles:
       x: 0.0
