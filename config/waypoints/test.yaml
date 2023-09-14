@@ -19,12 +19,12 @@ waypoint_server:
       y: -0.6510717868804932
       z: -3
     properties:
-      Stop_wp: Stop_ON
+      Stop_wp: Stop_OFF
       goal_radius: 0.75
   - euler_angles:
-      x: -3.0913530337832695e-06
-      y: -5.230895263164115e-06
-      z: -58.438875019667975
+      x: 5.389228302924544e-06
+      y: -3.0931646615162123e-06
+      z: -0.014914173609721132
     id: registed_goal_3
     position:
       x: 0.39247798919677734
@@ -34,16 +34,16 @@ waypoint_server:
       Stop_wp: Stop_ON
       goal_radius: 0.75
   - euler_angles:
-      x: 2.1152537063309886e-06
-      y: -1.7753623233751625e-06
-      z: -14.203303675154197
+      x: 1.8282272050366215e-06
+      y: -2.2990573753656207e-06
+      z: 1.712715090281999
     id: registed_goal_2
     position:
       x: 0.6487178802490234
       y: -1.825618028640747
       z: -3
     properties:
-      Stop_wp: Stop_ON
+      Stop_wp: Stop_OFF
       goal_radius: 0.5
   - euler_angles:
       x: 0.0
@@ -55,9 +55,9 @@ waypoint_server:
       y: -1.7298221588134766
       z: -3
   - euler_angles:
-      x: 0.0
-      y: 0.0
-      z: 1.5894480103362598
+      x: 1.1533996147562065e-07
+      y: -8.925952998950493e-08
+      z: 2.8654792446924304
     id: registed_goal_4
     position:
       x: -1.9108070135116577
@@ -65,10 +65,11 @@ waypoint_server:
       z: -3
     properties:
       Stop_wp: Stop_ON
+      goal_radius: 0.75
   - euler_angles:
-      x: 0.0
-      y: 0.0
-      z: 0.13361516451003677
+      x: -8.597044192751956e-08
+      y: -3.6642233913752875e-08
+      z: 2.1995287528222756
     id: registed_goal_0
     position:
       x: -0.5400511026382446
@@ -79,9 +80,9 @@ waypoint_server:
   - connections:
     - 2
     euler_angles:
-      x: 0.0
-      y: 0.0
-      z: -1.537722355623018
+      x: 7.869396661651519e-08
+      y: -2.0913643927755743e-07
+      z: 0.8290240189852717
     id: 1
     position:
       x: 0.5137159824371338
@@ -104,9 +105,9 @@ waypoint_server:
     properties:
       goal_radius: 0.5
   - euler_angles:
-      x: 0.0
-      y: 0.0
-      z: 0.0
+      x: 1.7788611198059764e-07
+      y: -2.591930663431441e-07
+      z: -0.15346629158668437
     id: 2
     position:
       x: 0.9291279315948486

@@ -113,6 +113,7 @@ class waypoint_manager2_node(Node):
 
         # stop_wp
         self.reject_next_wp = False
+        self.next_wp_flag = False
 
     def callback(self):
         self.route_manager.marker_array = MarkerArray()
@@ -212,10 +213,10 @@ class waypoint_manager2_node(Node):
         # marker.pose.orientation.y = orientation.y
         # marker.pose.orientation.z = orientation.z
         # marker.pose.orientation.w = orientation.w
-        marker.pose.orientation.x = 0.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 0.0
+        # marker.pose.orientation.x = 0.0
+        # marker.pose.orientation.y = 0.0
+        # marker.pose.orientation.z = 0.0
+        # marker.pose.orientation.w = 0.0
         return marker
 
     def deepCb(self, feedback):
@@ -406,7 +407,7 @@ class waypoint_manager2_node(Node):
         arrow_control.orientation.z = 0.0
         self.normalizeQuaternion(arrow_control.orientation)
         arrow_control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
-        # arrow_control.orientation_mode = InteractiveMarkerControl.INHERIT
+        arrow_control.orientation_mode = InteractiveMarkerControl.INHERIT
         int_marker.controls.append(copy.deepcopy(arrow_control))
 
         # make a box which also moves in the plane
@@ -446,9 +447,14 @@ class waypoint_manager2_node(Node):
         # convert q to euler
         # print(pose.orientation)
         x, y, z = self.euler_from_quaternion(pose.orientation)
-        waypoints[i]['euler_angles']['x'] = float(waypoints[i]['euler_angles']['x']) + copy.deepcopy(float(x)) #convert miss
-        waypoints[i]['euler_angles']['y'] = float(waypoints[i]['euler_angles']['y']) + copy.deepcopy(float(y))
-        waypoints[i]['euler_angles']['z'] = float(waypoints[i]['euler_angles']['z']) + copy.deepcopy(float(z)) 
+        waypoints[i]['euler_angles']['x'] = copy.deepcopy(float(x)) #convert miss
+        waypoints[i]['euler_angles']['y'] = copy.deepcopy(float(y))
+        waypoints[i]['euler_angles']['z'] = copy.deepcopy(float(z)) 
+        print(x, y, z)
+
+        # waypoints[i]['euler_angles']['x'] = float(waypoints[i]['euler_angles']['x']) + copy.deepcopy(float(x)) #convert miss
+        # waypoints[i]['euler_angles']['y'] = float(waypoints[i]['euler_angles']['y']) + copy.deepcopy(float(y))
+        # waypoints[i]['euler_angles']['z'] = float(waypoints[i]['euler_angles']['z']) + copy.deepcopy(float(z)) 
 
         # print(pose.orientation)
         # print(feedback)
@@ -517,7 +523,7 @@ class waypoint_manager2_node(Node):
 
             if i == CURRENT_WAYPOINT:
                 # print(i, current_waypoint)
-                self.goal_msg.pose = deepcopy(pose_)
+                self.goal_msg.pose = copy.deepcopy(pose_)
 
             # create marker
             position = Point(x=float(waypoints[i]['position']['x']), y=float(waypoints[i]['position']['y']), z=0.0)
@@ -571,6 +577,8 @@ class waypoint_manager2_node(Node):
         # this place insert process of exist goal radius settings 
         # print(self.nav_time.sec)
         GOAL_RADIUS = 0.5
+        self.reject_next_wp = False
+        self.next_wp_flag = False
 
         waypoints = self.config['waypoint_server']['waypoints']
 
@@ -585,13 +593,20 @@ class waypoint_manager2_node(Node):
             if 'Stop_wp' in waypoints[CURRENT_WAYPOINT]['properties']:
                 if waypoints[CURRENT_WAYPOINT]['properties']['Stop_wp'] == 'Stop_ON':
                     self.reject_next_wp = True
+                    # print('stop_wp')
+
+        if self.nav_time.sec >= 1.0:
+            self.next_wp_flag = True
+        
+        print(self.reject_next_wp, CURRENT_WAYPOINT)
 
         # check stop_wp
         if self.reject_next_wp:
             pass
         else:
-            if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 3.0 and CURRENT_WAYPOINT < len(waypoints) - 1:
+            if self.distance <= GOAL_RADIUS + 0.05 and self.next_wp_flag and CURRENT_WAYPOINT < len(waypoints) - 1:
             # if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and CURRENT_WAYPOINT < 0:
+                self.next_wp_flag = False
                 self.next_wp()
 
     def next_wp(self):
