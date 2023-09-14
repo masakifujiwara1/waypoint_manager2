@@ -23,7 +23,6 @@ WAYPOINT_SAVE_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test_
 WP_FEEDBACK_VISIBLE = True
 OVERWRITE = True
 TIME_PERIOD = 0.1
-# GOAL_RADIUS = 0.5
 
 menu_handler = MenuHandler()
 h_first_entry = 0
@@ -82,16 +81,12 @@ class waypoint_manager2_node(Node):
             NavigateToPose,                
             '/navigate_to_pose' 
         )
-        # self.action_client = ActionClient(
-        #     self,                     
-        #     FollowWaypoints,                
-        #     'FollowWaypoints' 
-        # )
         self.config = {}
         self.load_waypoints()
 
         self.send_wp_trigger_service = self.create_service(Trigger, 'waypoint_manager2/send_wp', self.send_wp_callback)
         self.save_wp_service = self.create_service(Trigger, 'waypoint_manager2/save_wp', self.save_wp_callback)
+        self.next_wp_service = self.create_service(Trigger, 'waypoint_manager2/next_wp', self.next_wp_callback)
         self.route_pub = self.create_publisher(MarkerArray, 'waypoint_manager2/routes', 10)
         self.update_pub = self.create_publisher(InteractiveMarkerUpdate, 'waypoint_manager2/update', 10)
 
@@ -116,6 +111,9 @@ class waypoint_manager2_node(Node):
         self.sum_rec_num = 0
         self.distance = 0
 
+        # stop_wp
+        self.reject_next_wp = False
+
     def callback(self):
         self.route_manager.marker_array = MarkerArray()
         self.route_manager.updateRoute(self.config)
@@ -133,6 +131,12 @@ class waypoint_manager2_node(Node):
 
     def save_wp_callback(self, request, response):
         self.save_waypoints()
+        response.success = True
+        return response
+
+    def next_wp_callback(self, request, response):
+        self.next_wp()
+        self.reject_next_wp = False
         response.success = True
         return response
 
@@ -225,6 +229,8 @@ class waypoint_manager2_node(Node):
 
         # menu_entry_id: Stop_ON > 5, Stop_OFF > 6
         waypoints = self.config['waypoint_server']['waypoints']
+        if 'properties' not in waypoints[int(feedback.marker_name)]:
+            waypoints[int(feedback.marker_name)]['properties'] = {}
         if feedback.menu_entry_id == 5:
             waypoints[int(feedback.marker_name)]['properties'].update(Stop_wp = 'Stop_ON')
         elif feedback.menu_entry_id == 6:
@@ -237,7 +243,6 @@ class waypoint_manager2_node(Node):
 
         # node.get_logger().info('Switching to menu entry #' + str(h_mode_last))
         menu_handler.reApply(self.server)
-        # print('DONE')
         self.apply_wp()
         self.server.applyChanges()
 
@@ -250,6 +255,8 @@ class waypoint_manager2_node(Node):
 
         # menu_entry_id: 0.5 -> 8, 0.75 -> 9, 1.0 -> 10, 1.5 -> 11
         waypoints = self.config['waypoint_server']['waypoints']
+        if 'properties' not in waypoints[int(feedback.marker_name)]:
+            waypoints[int(feedback.marker_name)]['properties'] = {}
         if feedback.menu_entry_id == 8:
             waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 0.5)
         elif feedback.menu_entry_id == 9:
@@ -439,9 +446,9 @@ class waypoint_manager2_node(Node):
         # convert q to euler
         # print(pose.orientation)
         x, y, z = self.euler_from_quaternion(pose.orientation)
-        waypoints[i]['euler_angles']['x'] = copy.deepcopy(float(x)) #convert miss
-        waypoints[i]['euler_angles']['y'] = copy.deepcopy(float(y))
-        waypoints[i]['euler_angles']['z'] = copy.deepcopy(float(z)) 
+        waypoints[i]['euler_angles']['x'] = float(waypoints[i]['euler_angles']['x']) + copy.deepcopy(float(x)) #convert miss
+        waypoints[i]['euler_angles']['y'] = float(waypoints[i]['euler_angles']['y']) + copy.deepcopy(float(y))
+        waypoints[i]['euler_angles']['z'] = float(waypoints[i]['euler_angles']['z']) + copy.deepcopy(float(z)) 
 
         # print(pose.orientation)
         # print(feedback)
@@ -574,13 +581,26 @@ class waypoint_manager2_node(Node):
         else:
             GOAL_RADIUS = 0.5
 
-        if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 3.0 and CURRENT_WAYPOINT < len(waypoints) - 1:
-        # if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and CURRENT_WAYPOINT < 0:
-            CURRENT_WAYPOINT += 1
-            self.server.clear()
-            self.apply_wp()
-            self.server.applyChanges()
-            self.send_goal()
+        if 'properties' in waypoints[CURRENT_WAYPOINT]:
+            if 'Stop_wp' in waypoints[CURRENT_WAYPOINT]['properties']:
+                if waypoints[CURRENT_WAYPOINT]['properties']['Stop_wp'] == 'Stop_ON':
+                    self.reject_next_wp = True
+
+        # check stop_wp
+        if self.reject_next_wp:
+            pass
+        else:
+            if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 3.0 and CURRENT_WAYPOINT < len(waypoints) - 1:
+            # if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and CURRENT_WAYPOINT < 0:
+                self.next_wp()
+
+    def next_wp(self):
+        global CURRENT_WAYPOINT
+        CURRENT_WAYPOINT += 1
+        self.server.clear()
+        self.apply_wp()
+        self.server.applyChanges()
+        self.send_goal()
 
 def main(args=None):
     rclpy.init(args=args)

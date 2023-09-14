@@ -10,34 +10,41 @@ waypoint_server:
   scale: 1
   waypoints:
   - euler_angles:
-      x: 0.0
-      y: 0.0
-      z: 2.1690457479573455
+      x: -1.851571997425223e-06
+      y: -2.2344114225525402e-06
+      z: -2.260053155691458
     id: registed_goal_3
     position:
       x: 1.757054328918457
       y: -0.6510717868804932
       z: -3
     properties:
+      Stop_wp: Stop_ON
       goal_radius: 0.75
   - euler_angles:
-      x: 0.0
-      y: 0.0
-      z: -2.5323102881695836
+      x: -3.0913530337832695e-06
+      y: -5.230895263164115e-06
+      z: -58.438875019667975
     id: registed_goal_3
     position:
       x: 0.39247798919677734
       y: -0.6615310311317444
       z: -3
+    properties:
+      Stop_wp: Stop_ON
+      goal_radius: 0.75
   - euler_angles:
-      x: 0.0
-      y: 0.0
-      z: -1.5311930641240896
+      x: 2.1152537063309886e-06
+      y: -1.7753623233751625e-06
+      z: -14.203303675154197
     id: registed_goal_2
     position:
       x: 0.6487178802490234
       y: -1.825618028640747
       z: -3
+    properties:
+      Stop_wp: Stop_ON
+      goal_radius: 0.5
   - euler_angles:
       x: 0.0
       y: 0.0
@@ -50,31 +57,35 @@ waypoint_server:
   - euler_angles:
       x: 0.0
       y: 0.0
-      z: 1.5521446432535333
+      z: 1.5894480103362598
     id: registed_goal_4
     position:
-      x: -2.1370792388916016
-      y: 0.10790824890136719
+      x: -1.9108070135116577
+      y: 0.10342110693454742
       z: -3
+    properties:
+      Stop_wp: Stop_ON
   - euler_angles:
       x: 0.0
       y: 0.0
       z: 0.13361516451003677
     id: registed_goal_0
     position:
-      x: -1.2030103206634521
-      y: 1.6353240013122559
+      x: -0.5400511026382446
+      y: 0.555774450302124
       z: -3
+    properties:
+      goal_radius: 0.5
   - connections:
     - 2
     euler_angles:
       x: 0.0
       y: 0.0
-      z: -1.6038702979667752
+      z: -1.537722355623018
     id: 1
     position:
-      x: -0.38080739974975586
-      y: 0.5448393821716309
+      x: 0.5137159824371338
+      y: 0.5565817356109619
       z: 0
     properties:
       Stop_wp: Stop_ON
@@ -84,11 +95,11 @@ waypoint_server:
     euler_angles:
       x: 0.0
       y: 0.0
-      z: 3.098834660601919
+      z: 0.04275799298787434
     id: 3
     position:
-      x: 1.369796872138977
-      y: 0.6522080898284912
+      x: 1.6952457427978516
+      y: 0.6247512102127075
       z: 6
     properties:
       goal_radius: 0.5
@@ -102,5 +113,5 @@ waypoint_server:
       y: 2.008296251296997
       z: 1
     properties:
-    - key: goal_radius
-      value: 10.0
+      Stop_wp: Stop_OFF
+      goal_radius: 0.75
