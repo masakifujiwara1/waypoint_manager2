@@ -1,0 +1,118 @@
+waypoint_server:
+  euler_angles:
+    x: 0
+    y: 0
+    z: 1.57
+  position:
+    x: 1
+    y: 2
+    z: 3
+  scale: 1
+  waypoints:
+  - euler_angles:
+      x: -1.851571997425223e-06
+      y: -2.2344114225525402e-06
+      z: -2.260053155691458
+    id: registed_goal_3
+    position:
+      x: 1.757054328918457
+      y: -0.6510717868804932
+      z: -3
+    properties:
+      Stop_wp: Stop_OFF
+      goal_radius: 0.75
+  - euler_angles:
+      x: 5.389228302924544e-06
+      y: -3.0931646615162123e-06
+      z: -0.014914173609721132
+    id: registed_goal_3
+    position:
+      x: 0.39247798919677734
+      y: -0.6615310311317444
+      z: -3
+    properties:
+      Stop_wp: Stop_ON
+      goal_radius: 0.75
+  - euler_angles:
+      x: 1.8282272050366215e-06
+      y: -2.2990573753656207e-06
+      z: 1.712715090281999
+    id: registed_goal_2
+    position:
+      x: 0.6487178802490234
+      y: -1.825618028640747
+      z: -3
+    properties:
+      Stop_wp: Stop_OFF
+      goal_radius: 0.5
+  - euler_angles:
+      x: 0.0
+      y: 0.0
+      z: 3.1245927460524645
+    id: registed_goal_1
+    position:
+      x: -0.9283876419067383
+      y: -1.7298221588134766
+      z: -3
+  - euler_angles:
+      x: 1.1533996147562065e-07
+      y: -8.925952998950493e-08
+      z: 2.8654792446924304
+    id: registed_goal_4
+    position:
+      x: -1.9108070135116577
+      y: 0.10342110693454742
+      z: -3
+    properties:
+      Stop_wp: Stop_OFF
+      goal_radius: 0.75
+  - euler_angles:
+      x: -8.597044192751956e-08
+      y: -3.6642233913752875e-08
+      z: 2.1995287528222756
+    id: registed_goal_0
+    position:
+      x: -0.5400511026382446
+      y: 0.555774450302124
+      z: -3
+    properties:
+      goal_radius: 0.5
+  - connections:
+    - 2
+    euler_angles:
+      x: 7.869396661651519e-08
+      y: -2.0913643927755743e-07
+      z: 0.8290240189852717
+    id: 1
+    position:
+      x: 0.5137159824371338
+      y: 0.5565817356109619
+      z: 0
+    properties:
+      Stop_wp: Stop_ON
+      goal_radius: 0.5
+  - connections:
+    - 1
+    euler_angles:
+      x: 0.0
+      y: 0.0
+      z: 0.04275799298787434
+    id: 3
+    position:
+      x: 1.6952457427978516
+      y: 0.6247512102127075
+      z: 6
+    properties:
+      goal_radius: 0.5
+  - euler_angles:
+      x: 1.7788611198059764e-07
+      y: -2.591930663431441e-07
+      z: -0.15346629158668437
+    id: 2
+    position:
+      x: 0.9291279315948486
+      y: 2.008296251296997
+      z: 1
+    properties:
+      Stop_wp: Stop_OFF
+      goal_radius: 0.75

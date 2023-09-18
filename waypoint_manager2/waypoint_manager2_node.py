@@ -18,7 +18,7 @@ from std_srvs.srv import Trigger
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-WAYPOINT_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test.yaml'
+WAYPOINT_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test2.yaml'
 WAYPOINT_SAVE_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test_output.yaml'
 WP_FEEDBACK_VISIBLE = True
 OVERWRITE = True
@@ -209,10 +209,10 @@ class waypoint_manager2_node(Node):
         marker.color.g = 0.0
         marker.color.b = 0.0
         marker.color.a = 1.0
-        # marker.pose.orientation.x = orientation.x
-        # marker.pose.orientation.y = orientation.y
-        # marker.pose.orientation.z = orientation.z
-        # marker.pose.orientation.w = orientation.w
+        marker.pose.orientation.x = copy.deepcopy(orientation.x)
+        marker.pose.orientation.y = copy.deepcopy(orientation.y)
+        marker.pose.orientation.z = copy.deepcopy(orientation.z)
+        marker.pose.orientation.w = copy.deepcopy(orientation.w)
         # marker.pose.orientation.x = 0.0
         # marker.pose.orientation.y = 0.0
         # marker.pose.orientation.z = 0.0
@@ -501,7 +501,7 @@ class waypoint_manager2_node(Node):
         return e[0], e[1], e[2]
 
     def apply_wp(self):
-        self.goal_msg = NavigateToPose.Goal()
+        # self.goal_msg = NavigateToPose.Goal()
         # self.goal_msg = FollowWaypoints.Goal()
         pose_ = PoseStamped()
 
@@ -530,6 +530,30 @@ class waypoint_manager2_node(Node):
             # q = self.quaternion_from_euler(0.0, 0.0, float(euler['z']))
             orientation = copy.deepcopy(Quaternion(x=q[0], y=q[1], w=q[2], z=q[3]))
             self.makeMovingMarker(i, position, orientation)
+
+    def set_next_wp(self):
+        self.goal_msg = NavigateToPose.Goal()
+        pose_ = PoseStamped()
+
+        waypoints = self.config['waypoint_server']['waypoints']
+        # for i in range(1):
+        for i in range(len(waypoints)):
+            pose_.header.frame_id = "map"
+            pose_.pose.position.x = float(waypoints[i]['position']['x'])
+            pose_.pose.position.y = float(waypoints[i]['position']['y'])
+            pose_.pose.position.z = -0.01
+            euler = waypoints[i]['euler_angles']
+            q = self.quaternion_from_euler(float(euler['x']), float(euler['y']), float(euler['z']))
+            # q = self.quaternion_from_euler(0.0, 0.0, float(euler['z']))
+            pose_.pose.orientation.x = q[0]
+            pose_.pose.orientation.y = q[1]
+            pose_.pose.orientation.z = q[2]
+            pose_.pose.orientation.w = q[3]
+            # self.goal_msg.poses.append(deepcopy(pose_))
+
+            if i == CURRENT_WAYPOINT:
+                # print(i, current_waypoint)
+                self.goal_msg.pose = copy.deepcopy(pose_)
     
     def send_goal(self):
         # self.action_client.wait_for_server()
@@ -612,9 +636,9 @@ class waypoint_manager2_node(Node):
     def next_wp(self):
         global CURRENT_WAYPOINT
         CURRENT_WAYPOINT += 1
-        self.server.clear()
-        self.apply_wp()
-        self.server.applyChanges()
+        # self.server.clear()
+        self.set_next_wp()
+        # self.server.applyChanges()
         self.send_goal()
 
 def main(args=None):
