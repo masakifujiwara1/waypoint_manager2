@@ -604,7 +604,7 @@ class waypoint_manager2_node(Node):
         if self.reject_next_wp:
             pass
         else:
-            if self.distance <= GOAL_RADIUS + 0.05 and self.next_wp_flag and CURRENT_WAYPOINT < len(waypoints) - 1:
+            if self.distance <= GOAL_RADIUS + 0.1 and self.next_wp_flag and CURRENT_WAYPOINT < len(waypoints) - 1:
             # if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and CURRENT_WAYPOINT < 0:
                 self.next_wp_flag = False
                 self.next_wp()

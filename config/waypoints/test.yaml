@@ -64,7 +64,7 @@ waypoint_server:
       y: 0.10342110693454742
       z: -3
     properties:
-      Stop_wp: Stop_ON
+      Stop_wp: Stop_OFF
       goal_radius: 0.75
   - euler_angles:
       x: -8.597044192751956e-08
