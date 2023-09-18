@@ -82,7 +82,7 @@ waypoint_server:
     euler_angles:
       x: 7.869396661651519e-08
       y: -2.0913643927755743e-07
-      z: 0.8290240189852717
+      z: -2.260053155691458
     id: 1
     position:
       x: 0.5137159824371338
@@ -103,7 +103,7 @@ waypoint_server:
       y: 0.6247512102127075
       z: 6
     properties:
-      goal_radius: 0.5
+      goal_radius: 0.75
   - euler_angles:
       x: 1.7788611198059764e-07
       y: -2.591930663431441e-07
