@@ -18,6 +18,7 @@ from std_srvs.srv import Trigger
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
+# WAYPOINT_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/tsudanuma2-3.yaml'
 WAYPOINT_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test2.yaml'
 WAYPOINT_SAVE_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test_output.yaml'
 WP_FEEDBACK_VISIBLE = True
@@ -31,7 +32,7 @@ radius_mode_last = 0
 
 marker_pos = 0
 
-CURRENT_WAYPOINT = 0
+# self.current_waypoint = 0
 # DISTANCE = None
 
 class waypoint_behavior:
@@ -56,9 +57,9 @@ class route_manager:
         route.pose.position.y = 0.0
         route.pose.position.z = 0.0
         route.scale.x = route.scale.y = route.scale.z = 0.03
-        route.color.r = 0.0
-        route.color.g = 0.0
-        route.color.b = 1.0
+        route.color.r = 1.0
+        route.color.g = 1.0
+        route.color.b = 0.0
         route.color.a = 1.0
         route.points.append(position1)
         route.points.append(position2)
@@ -114,6 +115,10 @@ class waypoint_manager2_node(Node):
         # stop_wp
         self.reject_next_wp = False
         self.next_wp_flag = False
+
+        self.current_waypoint = 0
+        self.old_number_of_recoveries = 0
+        self.failed_count = 0
 
     def callback(self):
         self.route_manager.marker_array = MarkerArray()
@@ -521,8 +526,8 @@ class waypoint_manager2_node(Node):
             pose_.pose.orientation.w = q[3]
             # self.goal_msg.poses.append(deepcopy(pose_))
 
-            if i == CURRENT_WAYPOINT:
-                # print(i, current_waypoint)
+            if i == self.current_waypoint:
+                # print(i, self.current_waypoint)
                 self.goal_msg.pose = copy.deepcopy(pose_)
 
             # create marker
@@ -551,8 +556,8 @@ class waypoint_manager2_node(Node):
             pose_.pose.orientation.w = q[3]
             # self.goal_msg.poses.append(deepcopy(pose_))
 
-            if i == CURRENT_WAYPOINT:
-                # print(i, current_waypoint)
+            if i == self.current_waypoint:
+                # print(i, self.current_waypoint)
                 self.goal_msg.pose = copy.deepcopy(pose_)
     
     def send_goal(self):
@@ -571,6 +576,14 @@ class waypoint_manager2_node(Node):
         # self.is_reached_goal(feedback.feedback.distance_remaining)
         self.distance = feedback.feedback.distance_remaining
         self.nav_time = feedback.feedback.navigation_time
+
+        # if feedback.feedback.number_of_recoveries == self.old_number_of_recoveries:
+        #     pass
+        # else:
+        #     self.distance = 10.0
+
+        # self.old_number_of_recoveries = feedback.feedback.number_of_recoveries
+
         self.is_reached_goal()
         # self.get_logger().info('Received feedback: {0}'.format(feedback.feedback.navigation_time))
 
@@ -578,6 +591,8 @@ class waypoint_manager2_node(Node):
         self.goal_handle = future.result()
         if not self.goal_handle.accepted:
            return
+
+        # print(future.result().status)
 
         self.result_future = self.goal_handle.get_result_async()
         self.result_future.add_done_callback(self.result_callback)
@@ -591,13 +606,28 @@ class waypoint_manager2_node(Node):
         #     pass
         # self.server.shutdown()
         # rclpy.shutdown()
+        # print(status)
+
         if status == action_msgs.msg.GoalStatus.STATUS_SUCCEEDED:
             self.get_logger().info('Goal succeeded!')
         else:
+            # self.get_logger().info('='*50)
             self.get_logger().info('Goal failed!')
+            self.failed_count += 1
+
+            # waypoints = self.config['waypoint_server']['waypoints']
+
+            # if 'properties' in waypoints[self.current_waypoint]:
+            #     if 'goal_radius' in waypoints[self.current_waypoint]['properties']:
+            #         GOAL_RADIUS = copy.deepcopy(float(waypoints[self.current_waypoint]['properties']['goal_radius']) / 2)
+            # if  self.distance < GOAL_RADIUS + 0.1:
+            #     self.distance = 10.0
+            # self.get_logger().info('='*50)
+
+            # self.send_goal()
 
     def is_reached_goal(self):
-        global CURRENT_WAYPOINT
+        # global self.current_waypoint
         # this place insert process of exist goal radius settings 
         # print(self.nav_time.sec)
         GOAL_RADIUS = 0.5
@@ -607,35 +637,38 @@ class waypoint_manager2_node(Node):
         waypoints = self.config['waypoint_server']['waypoints']
 
         # set goal_radius
-        if 'properties' in waypoints[CURRENT_WAYPOINT]:
-            if 'goal_radius' in waypoints[CURRENT_WAYPOINT]['properties']:
-                GOAL_RADIUS = copy.deepcopy(float(waypoints[CURRENT_WAYPOINT]['properties']['goal_radius']) / 2)
+        if 'properties' in waypoints[self.current_waypoint]:
+            if 'goal_radius' in waypoints[self.current_waypoint]['properties']:
+                GOAL_RADIUS = copy.deepcopy(float(waypoints[self.current_waypoint]['properties']['goal_radius']) / 2)
         else:
             GOAL_RADIUS = 0.5
 
-        if 'properties' in waypoints[CURRENT_WAYPOINT]:
-            if 'Stop_wp' in waypoints[CURRENT_WAYPOINT]['properties']:
-                if waypoints[CURRENT_WAYPOINT]['properties']['Stop_wp'] == 'Stop_ON':
+        if 'properties' in waypoints[self.current_waypoint]:
+            if 'Stop_wp' in waypoints[self.current_waypoint]['properties']:
+                if waypoints[self.current_waypoint]['properties']['Stop_wp'] == 'Stop_ON':
                     self.reject_next_wp = True
                     # print('stop_wp')
 
-        if self.nav_time.sec >= 1.0:
+        # if self.nav_time.sec >= 3.0 or self.distance > GOAL_RADIUS + 0.5:
+        if self.distance > GOAL_RADIUS + 0.5:
             self.next_wp_flag = True
         
-        print(self.reject_next_wp, CURRENT_WAYPOINT)
+        print('reject_next_wp: ' + str(self.reject_next_wp) , 'current_waypoint: ' + str(self.current_waypoint) , 'next_wp_flag: ' + str(self.next_wp_flag) + '\n')
 
         # check stop_wp
         if self.reject_next_wp:
             pass
         else:
-            if self.distance <= GOAL_RADIUS + 0.1 and self.next_wp_flag and CURRENT_WAYPOINT < len(waypoints) - 1:
-            # if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and CURRENT_WAYPOINT < 0:
+            # if self.distance <= GOAL_RADIUS + 0.1 and (not self.distance == 0.0) and self.next_wp_flag and self.current_waypoint < len(waypoints) - 1:
+            if self.distance <= GOAL_RADIUS + 0.1 and self.next_wp_flag and self.current_waypoint < len(waypoints) - 1:
+            # if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and self.current_waypoint < 0:
                 self.next_wp_flag = False
                 self.next_wp()
 
     def next_wp(self):
-        global CURRENT_WAYPOINT
-        CURRENT_WAYPOINT += 1
+        # global self.current_waypoint
+        self.current_waypoint += 1
+        self.old_number_of_recoveries = 0
         # self.server.clear()
         self.set_next_wp()
         # self.server.applyChanges()
