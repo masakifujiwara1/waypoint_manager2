@@ -457,23 +457,6 @@ class waypoint_manager2_node(Node):
         waypoints[i]['euler_angles']['z'] = copy.deepcopy(float(z)) 
         print(x, y, z)
 
-        # waypoints[i]['euler_angles']['x'] = float(waypoints[i]['euler_angles']['x']) + copy.deepcopy(float(x)) #convert miss
-        # waypoints[i]['euler_angles']['y'] = float(waypoints[i]['euler_angles']['y']) + copy.deepcopy(float(y))
-        # waypoints[i]['euler_angles']['z'] = float(waypoints[i]['euler_angles']['z']) + copy.deepcopy(float(z)) 
-
-        # print(pose.orientation)
-        # print(feedback)
-
-        # if WP_FEEDBACK_VISIBLE:
-        #     self.get_logger().info(
-        #         f'{feedback.marker_name}: aligning position = {feedback.pose.position.x}, '
-        #         f'{feedback.pose.position.y}, {feedback.pose.position.z} to '
-        #         f'{pose.position.x}, {pose.position.y}, {pose.position.z}'
-        #         f'{feedback.pose.orientation.x}, {feedback.pose.orientation.y}, {feedback.pose.orientation.z}, {feedback.pose.orientation.w}'
-        #         f'{float(x)}, {float(y)}, {float(z)}'
-        #         f'{feedback}'
-        #     )
-
         self.server.setPose(feedback.marker_name, pose)
         # self.server.clear()
         # self.apply_wp()
