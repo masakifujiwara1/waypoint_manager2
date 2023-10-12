@@ -228,13 +228,13 @@ class waypoint_manager2_node(Node):
         h_mode_last = feedback.menu_entry_id
         # print(feedback.menu_entry_id)
 
-        # menu_entry_id: Stop_ON > 5, Stop_OFF > 6
+        # menu_entry_id: Stop_ON > 6, Stop_OFF > 7
         waypoints = self.config['waypoint_server']['waypoints']
         if 'properties' not in waypoints[int(feedback.marker_name)]:
             waypoints[int(feedback.marker_name)]['properties'] = {}
-        if feedback.menu_entry_id == 5:
+        if feedback.menu_entry_id == 6:
             waypoints[int(feedback.marker_name)]['properties'].update(Stop_wp = 'Stop_ON')
-        elif feedback.menu_entry_id == 6:
+        elif feedback.menu_entry_id == 7:
             waypoints[int(feedback.marker_name)]['properties'].update(Stop_wp = 'Stop_OFF')
 
         menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
@@ -254,17 +254,17 @@ class waypoint_manager2_node(Node):
         # print(feedback.menu_entry_id)
         # print(int(feedback.marker_name))
 
-        # menu_entry_id: 0.5 -> 8, 0.75 -> 9, 1.0 -> 10, 1.5 -> 11
+        # menu_entry_id: 0.5 -> 9, 0.75 -> 10, 1.0 -> 11, 1.5 -> 12
         waypoints = self.config['waypoint_server']['waypoints']
         if 'properties' not in waypoints[int(feedback.marker_name)]:
             waypoints[int(feedback.marker_name)]['properties'] = {}
-        if feedback.menu_entry_id == 8:
+        if feedback.menu_entry_id == 9:
             waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 0.5)
-        elif feedback.menu_entry_id == 9:
-            waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 0.75)
         elif feedback.menu_entry_id == 10:
-            waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 1.0)
+            waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 0.75)
         elif feedback.menu_entry_id == 11:
+            waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 1.0)
+        elif feedback.menu_entry_id == 12:
             waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 1.5)
 
         menu_handler.setCheckState(radius_mode_last, MenuHandler.CHECKED)
@@ -283,7 +283,8 @@ class waypoint_manager2_node(Node):
         # entry = menu_handler.insert('sub', parent=entry)
         # entry = menu_handler.insert('menu', parent=entry, callback=self.deepCb)
 
-        h_first_entry = menu_handler.insert('insert', callback=self.insert_callback)
+        h_first_entry = menu_handler.insert('insert_wp', callback=self.insert_callback)
+        delete_entry = menu_handler.insert('delete_wp', callback=self.delete_callback)
         save_entry = menu_handler.insert('save_wp', callback=self.menu_save_wp)
         start_entry = menu_handler.insert('start_wp_nav', callback=self.start_wp)
 
@@ -357,10 +358,7 @@ class waypoint_manager2_node(Node):
         # register insert point
         i = int(feedback.marker_name)
         waypoints = self.config['waypoint_server']['waypoints']
-        waypoints.insert(i+1, copy.deepcopy(waypoints[i]))
-
-        waypoints[i+1]['position']['x'] = p.x + 0.3
-        waypoints[i+1]['position']['y'] = p.y 
+        del waypoints[i]
 
         # initialize server
         self.server.clear()
