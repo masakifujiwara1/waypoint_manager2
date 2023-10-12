@@ -350,6 +350,27 @@ class waypoint_manager2_node(Node):
         # apply change
         self.server.applyChanges()
 
+    def delete_callback(self, feedback):
+        p = feedback.pose.position
+        print(f'{feedback.marker_name} is now at {p.x}, {p.y}, {p.z}')
+
+        # register insert point
+        i = int(feedback.marker_name)
+        waypoints = self.config['waypoint_server']['waypoints']
+        waypoints.insert(i+1, copy.deepcopy(waypoints[i]))
+
+        waypoints[i+1]['position']['x'] = p.x + 0.3
+        waypoints[i+1]['position']['y'] = p.y 
+
+        # initialize server
+        self.server.clear()
+
+        # recreate interactive_marker
+        self.apply_wp()
+
+        # apply change
+        self.server.applyChanges()
+
     def normalizeQuaternion(self, quaternion_msg):
         norm = quaternion_msg.x**2 + quaternion_msg.y**2 + quaternion_msg.z**2 + quaternion_msg.w**2
         s = norm**(-0.5)
