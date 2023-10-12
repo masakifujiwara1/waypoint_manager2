@@ -2,10 +2,11 @@
 from argparse import Action
 import rclpy
 import copy
+from rclpy import qos
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from nav2_msgs.action import FollowWaypoints, NavigateToPose
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from copy import deepcopy
 import action_msgs
 import yaml
@@ -18,8 +19,8 @@ from std_srvs.srv import Trigger
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-# WAYPOINT_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/tsudanuma2-3.yaml'
-WAYPOINT_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test2.yaml'
+WAYPOINT_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/tsudanuma2-3.yaml'
+# WAYPOINT_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test2.yaml'
 WAYPOINT_SAVE_PATH = '/home/ros2_ws/src/waypoint_manager2/config/waypoints/test_output.yaml'
 WP_FEEDBACK_VISIBLE = True
 OVERWRITE = True
@@ -91,6 +92,10 @@ class waypoint_manager2_node(Node):
         self.route_pub = self.create_publisher(MarkerArray, 'waypoint_manager2/routes', 10)
         self.update_pub = self.create_publisher(InteractiveMarkerUpdate, 'waypoint_manager2/update', 10)
 
+        # subscribe amcl pose
+        qos_profile = qos.qos_profile_sensor_data
+        self.amcl_pos_sub = self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose', self.amcl_callback, qos_profile)
+
         self.time_period = TIME_PERIOD
         self.tmr = self.create_timer(self.time_period, self.callback)
 
@@ -108,9 +113,10 @@ class waypoint_manager2_node(Node):
 
         self.old_x, self.old_y = 1, 1
 
+        # action status
         self.sum_nav_time = 0
         self.sum_rec_num = 0
-        self.distance = 0
+        self.distance = 10
 
         # stop_wp
         self.reject_next_wp = False
@@ -119,6 +125,11 @@ class waypoint_manager2_node(Node):
         self.current_waypoint = 0
         self.old_number_of_recoveries = 0
         self.failed_count = 0
+
+        # for calculating distance with amcl_pose
+        self.amcl_pos = PoseWithCovarianceStamped()
+        self.amcl_distance = 0
+        self.amcl_status = False
 
     def callback(self):
         self.route_manager.marker_array = MarkerArray()
@@ -163,26 +174,10 @@ class waypoint_manager2_node(Node):
         o = feedback.pose.orientation
         if WP_FEEDBACK_VISIBLE:
             print(f'{feedback.marker_name} is now at {p.x}, {p.y}, {p.z}')
-        # i = int(feedback.marker_name)
-        # arrow_name = 'arrow' + str(i)
-        # if not arrow_name == feedback.control_name:
-        #     if (not self.old_x == p.x) or (not self.old_y == p.y):
-        #         q, e = self.calc_direction(p.x, p.y)
-        #         o.x = q[0]
-        #         o.y = q[1]
-        #         o.z = q[2]
-        #         o.w = q[3]
-        #         x, y, z = self.euler_from_quaternion(o)
-        #         waypoints = self.config['waypoint_server']['waypoints']
-        #         waypoints[i]['euler_angles']['x'] = float(x) #convert miss
-        #         waypoints[i]['euler_angles']['y'] = float(y)
-        #         waypoints[i]['euler_angles']['z'] = float(z)
-                # waypoints[i]['euler_angles']['x'] = float(e[0]) #convert miss
-                # waypoints[i]['euler_angles']['y'] = float(e[1])
-                # waypoints[i]['euler_angles']['z'] = float(e[2])
-                # self.server.clear()
-                # self.apply_wp()
-                # self.server.applyChanges()
+        
+    def amcl_callback(self, msg):
+        self.amcl_pos = copy.deepcopy(msg)
+        # print(self.amcl_pos)
         
     def makeBox(self, msg, flag):
         marker = Marker()
@@ -214,14 +209,14 @@ class waypoint_manager2_node(Node):
         marker.color.g = 0.0
         marker.color.b = 0.0
         marker.color.a = 1.0
-        marker.pose.orientation.x = copy.deepcopy(orientation.x)
-        marker.pose.orientation.y = copy.deepcopy(orientation.y)
-        marker.pose.orientation.z = copy.deepcopy(orientation.z)
-        marker.pose.orientation.w = copy.deepcopy(orientation.w)
-        # marker.pose.orientation.x = 0.0
-        # marker.pose.orientation.y = 0.0
-        # marker.pose.orientation.z = 0.0
-        # marker.pose.orientation.w = 0.0
+        # marker.pose.orientation.x = copy.deepcopy(orientation.x)
+        # marker.pose.orientation.y = copy.deepcopy(orientation.y)
+        # marker.pose.orientation.z = copy.deepcopy(orientation.z)
+        # marker.pose.orientation.w = copy.deepcopy(orientation.w)
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 0.0
         return marker
 
     def deepCb(self, feedback):
@@ -553,7 +548,7 @@ class waypoint_manager2_node(Node):
     def feedback_callback(self, feedback):
         # global DISTANCE
         # print("current_pose :", feedback.feedback.current_pose)
-        print("navigation_time :", feedback.feedback.navigation_time)
+        print("navigation_time :", str(feedback.feedback.navigation_time.sec) + '.' + str(feedback.feedback.navigation_time.nanosec))
         print("number_of_recoveries :", feedback.feedback.number_of_recoveries)
         print("distance_remaining :", feedback.feedback.distance_remaining)
         # self.is_reached_goal(feedback.feedback.distance_remaining)
@@ -608,6 +603,8 @@ class waypoint_manager2_node(Node):
             # self.get_logger().info('='*50)
 
             # self.send_goal()
+    def calc_distance_with_amcl(self):
+        self.amcl_distance = math.sqrt((self.goal_msg.pose.pose.position.x - self.amcl_pos.pose.pose.position.x)**2 + (self.goal_msg.pose.pose.position.y - self.amcl_pos.pose.pose.position.y)**2)
 
     def is_reached_goal(self):
         # global self.current_waypoint
@@ -616,6 +613,7 @@ class waypoint_manager2_node(Node):
         GOAL_RADIUS = 0.5
         self.reject_next_wp = False
         self.next_wp_flag = False
+        self.amcl_status = False
 
         waypoints = self.config['waypoint_server']['waypoints']
 
@@ -632,18 +630,29 @@ class waypoint_manager2_node(Node):
                     self.reject_next_wp = True
                     # print('stop_wp')
 
-        # if self.nav_time.sec >= 3.0 or self.distance > GOAL_RADIUS + 0.5:
-        if self.distance > GOAL_RADIUS + 0.5:
+        self.calc_distance_with_amcl()
+        # print(self.amcl_distance)
+
+        if self.amcl_distance > self.distance:
+            self.amcl_status = True
+            self.distance = copy.deepcopy(self.amcl_distance)
+        # self.distance = max(self.distance, self.amcl_distance)
+
+        print("distance_amcl :", self.amcl_distance)
+        print( 'current_waypoint: ', self.current_waypoint)
+
+        if self.nav_time.sec >= 3.0 or self.distance > GOAL_RADIUS + 0.5:
+        # if self.distance > GOAL_RADIUS + 0.5:
             self.next_wp_flag = True
         
-        print('reject_next_wp: ' + str(self.reject_next_wp) , 'current_waypoint: ' + str(self.current_waypoint) , 'next_wp_flag: ' + str(self.next_wp_flag) + '\n')
+        print('reject_next_wp: ' + str(self.reject_next_wp) + '\n' + 'next_wp_flag: ' + str(self.next_wp_flag) + '\n' + 'bigger_amcl_distance: ' + str(self.amcl_status) + '\n')
 
         # check stop_wp
         if self.reject_next_wp:
             pass
         else:
             # if self.distance <= GOAL_RADIUS + 0.1 and (not self.distance == 0.0) and self.next_wp_flag and self.current_waypoint < len(waypoints) - 1:
-            if self.distance <= GOAL_RADIUS + 0.1 and self.next_wp_flag and self.current_waypoint < len(waypoints) - 1:
+            if self.distance <= GOAL_RADIUS + 0.2 and self.next_wp_flag and self.current_waypoint < len(waypoints) - 1:
             # if self.distance <= GOAL_RADIUS and self.nav_time.sec >= 1.0 and self.current_waypoint < 0:
                 self.next_wp_flag = False
                 self.next_wp()
