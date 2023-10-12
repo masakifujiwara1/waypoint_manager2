@@ -216,7 +216,7 @@ class waypoint_manager2_node(Node):
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 0.0
         marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 0.0
+        marker.pose.orientation.w = 1.0
         return marker
 
     def deepCb(self, feedback):
@@ -511,7 +511,7 @@ class waypoint_manager2_node(Node):
             # create marker
             position = Point(x=float(waypoints[i]['position']['x']), y=float(waypoints[i]['position']['y']), z=0.0)
             # q = self.quaternion_from_euler(0.0, 0.0, float(euler['z']))
-            orientation = copy.deepcopy(Quaternion(x=q[0], y=q[1], w=q[2], z=q[3]))
+            orientation = copy.deepcopy(Quaternion(x=q[0], y=q[1], z=q[2], w=q[3]))
             self.makeMovingMarker(i, position, orientation)
 
     def set_next_wp(self):
