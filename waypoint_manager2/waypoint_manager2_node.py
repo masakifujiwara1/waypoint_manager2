@@ -296,9 +296,9 @@ class waypoint_manager2_node(Node):
         if 'properties' not in waypoints[int(feedback.marker_name)]:
             waypoints[int(feedback.marker_name)]['properties'] = {}
         if feedback.menu_entry_id == 14:
-            waypoints[int(feedback.marker_name)]['properties'].update(Stop_wp = 'Trafic_ON')
+            waypoints[int(feedback.marker_name)]['properties'].update(Trafic_wp = 'Trafic_ON')
         elif feedback.menu_entry_id == 15:
-            waypoints[int(feedback.marker_name)]['properties'].update(Stop_wp = 'Trafic_OFF')
+            waypoints[int(feedback.marker_name)]['properties'].update(Trafic_wp = 'Trafic_OFF')
 
         menu_handler.setCheckState(trafic_mode_last, MenuHandler.CHECKED)
 
