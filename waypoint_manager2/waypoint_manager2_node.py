@@ -32,7 +32,7 @@ menu_handler = MenuHandler()
 h_first_entry = 0
 h_mode_last = 0
 radius_mode_last = 0
-trafic_mode_last = 0
+traffic_mode_last = 0
 
 marker_pos = 0
 
@@ -74,10 +74,10 @@ class route_manager:
             position2 = Point(x=float(waypoints[i+1]['position']['x']), y=float(waypoints[i+1]['position']['y']), z=0.0)
             self.makeRoute(i, position1, position2)
 
-class Trafic_light_client(Node):
+class Traffic_light_client(Node):
     def __init__(self):
-        super().__init__('Trafic_light_client')
-        self.client = self.create_client(Trigger, '/trafic_light')
+        super().__init__('Traffic_light_client')
+        self.client = self.create_client(Trigger, '/traffic_light')
     
     def send_request(self):
         req = Trigger.Request()
@@ -148,9 +148,9 @@ class waypoint_manager2_node(Node):
         # waypoint color
         self.color_flag = False
 
-        # trafic mode
-        self.trafic_flag = False
-        self.trafic_light_client = Trafic_light_client()
+        # traffic mode
+        self.traffic_flag = False
+        self.traffic_light_client = Traffic_light_client()
 
     def callback(self):
         self.route_manager.marker_array = MarkerArray()
@@ -209,7 +209,7 @@ class waypoint_manager2_node(Node):
             marker.color.g = 0.0
             marker.color.b = 0.0
             marker.color.a = 0.6
-        elif self.color_flag == 'Trafic_wp':
+        elif self.color_flag == 'Traffic_wp':
             marker.color.r = 0.0
             marker.color.g = 0.0
             marker.color.b = 1.0
@@ -286,28 +286,28 @@ class waypoint_manager2_node(Node):
         self.apply_wp()
         self.server.applyChanges()
 
-    def modeCb_trafic(self, feedback):
-        global trafic_mode_last
-        menu_handler.setCheckState(trafic_mode_last, MenuHandler.UNCHECKED)
-        trafic_mode_last = feedback.menu_entry_id
+    def modeCb_traffic(self, feedback):
+        global traffic_mode_last
+        menu_handler.setCheckState(traffic_mode_last, MenuHandler.UNCHECKED)
+        traffic_mode_last = feedback.menu_entry_id
 
         # menu_entry_id: Stop_ON > 14, Stop_OFF > 15
         waypoints = self.config['waypoint_server']['waypoints']
         if 'properties' not in waypoints[int(feedback.marker_name)]:
             waypoints[int(feedback.marker_name)]['properties'] = {}
         if feedback.menu_entry_id == 14:
-            waypoints[int(feedback.marker_name)]['properties'].update(Trafic_wp = 'Trafic_ON')
+            waypoints[int(feedback.marker_name)]['properties'].update(Traffic_wp = 'Traffic_ON')
         elif feedback.menu_entry_id == 15:
-            waypoints[int(feedback.marker_name)]['properties'].update(Trafic_wp = 'Trafic_OFF')
+            waypoints[int(feedback.marker_name)]['properties'].update(Traffic_wp = 'Traffic_OFF')
 
-        menu_handler.setCheckState(trafic_mode_last, MenuHandler.CHECKED)
+        menu_handler.setCheckState(traffic_mode_last, MenuHandler.CHECKED)
 
         menu_handler.reApply(self.server)
         self.apply_wp()
         self.server.applyChanges()
 
     def initMenu(self):
-        global h_first_entry, h_mode_last, radius_mode_last, trafic_mode_last
+        global h_first_entry, h_mode_last, radius_mode_last, traffic_mode_last
         
         h_first_entry = menu_handler.insert('insert_wp', callback=self.insert_callback)
         delete_entry = menu_handler.insert('delete_wp', callback=self.delete_callback)
@@ -340,16 +340,16 @@ class waypoint_manager2_node(Node):
         # check the very last entry
         menu_handler.setCheckState(radius_mode_last, MenuHandler.CHECKED)
 
-        sub_menu_handle = menu_handler.insert('Trafic_wp')
+        sub_menu_handle = menu_handler.insert('Traffic_wp')
         for i in range(2):
             if i == 0:
-                s = 'Trafic_ON'
+                s = 'Traffic_ON'
             else:
-                s = 'Trafic_OFF'
-            trafic_mode_last = menu_handler.insert(s, parent=sub_menu_handle, callback=self.modeCb_trafic)
-            menu_handler.setCheckState(trafic_mode_last, MenuHandler.UNCHECKED)
+                s = 'Traffic_OFF'
+            traffic_mode_last = menu_handler.insert(s, parent=sub_menu_handle, callback=self.modeCb_traffic)
+            menu_handler.setCheckState(traffic_mode_last, MenuHandler.UNCHECKED)
         # check the very last entry
-        menu_handler.setCheckState(trafic_mode_last, MenuHandler.CHECKED)
+        menu_handler.setCheckState(traffic_mode_last, MenuHandler.CHECKED)
 
     def start_wp(self, feedback):
         self.server.clear()
@@ -436,9 +436,9 @@ class waypoint_manager2_node(Node):
             self.color_flag = False
 
         if 'properties' in waypoints[i]:
-            if 'Trafic_wp' in waypoints[i]['properties']:
-                if waypoints[i]['properties']['Trafic_wp'] == 'Trafic_ON':
-                    self.color_flag = 'Trafic_wp'
+            if 'Traffic_wp' in waypoints[i]['properties']:
+                if waypoints[i]['properties']['Traffic_wp'] == 'Traffic_ON':
+                    self.color_flag = 'Traffic_wp'
         else:
             self.color_flag = False
 
@@ -604,9 +604,9 @@ class waypoint_manager2_node(Node):
         if status == action_msgs.msg.GoalStatus.STATUS_SUCCEEDED:
             self.get_logger().info('Goal succeeded!')
 
-            if self.trafic_flag:
-                self.trafic_light_client.send_request()
-                self.trafic_flag = False
+            if self.traffic_flag:
+                self.traffic_light_client.send_request()
+                self.traffic_flag = False
 
             if (not self.goal_) and self.first:
                 self.start_wp_goal()
@@ -641,11 +641,11 @@ class waypoint_manager2_node(Node):
                     self.goal_ = True
 
         if 'properties' in waypoints[self.current_waypoint]:
-            if 'Trafic_wp' in waypoints[self.current_waypoint]['properties']:
-                if waypoints[self.current_waypoint]['properties']['Trafic_wp'] == 'Trafic_ON':
+            if 'Traffic_wp' in waypoints[self.current_waypoint]['properties']:
+                if waypoints[self.current_waypoint]['properties']['Traffic_wp'] == 'Traffic_ON':
                     self.reject_next_wp = True
                     self.goal_ = True
-                    self.trafic_flag = True
+                    self.traffic_flag = True
 
         self.calc_distance_with_amcl()
 
