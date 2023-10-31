@@ -76,6 +76,7 @@ class route_manager:
 
 class Trafic_light_client(Node):
     def __init__(self):
+        super().__init__('Trafic_light_client')
         self.client = self.create_client(Trigger, '/trafic_light')
     
     def send_request(self):
