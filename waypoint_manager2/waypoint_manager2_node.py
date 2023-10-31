@@ -74,7 +74,7 @@ class route_manager:
             position2 = Point(x=float(waypoints[i+1]['position']['x']), y=float(waypoints[i+1]['position']['y']), z=0.0)
             self.makeRoute(i, position1, position2)
 
-class Trafic_light_client:
+class Trafic_light_client(Node):
     def __init__(self):
         self.client = self.create_client(Trigger, '/trafic_light')
     
