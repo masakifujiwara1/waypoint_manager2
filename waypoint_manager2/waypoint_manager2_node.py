@@ -300,7 +300,7 @@ class waypoint_manager2_node(Node):
         elif feedback.menu_entry_id == 15:
             waypoints[int(feedback.marker_name)]['properties'].update(Stop_wp = 'Trafic_OFF')
 
-        menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
+        menu_handler.setCheckState(trafic_mode_last, MenuHandler.CHECKED)
 
         menu_handler.reApply(self.server)
         self.apply_wp()
@@ -420,6 +420,7 @@ class waypoint_manager2_node(Node):
         int_marker.pose.orientation = copy.deepcopy(orientation)
 
         waypoints = self.config['waypoint_server']['waypoints']
+        self.color_flag = False
 
         if 'properties' in waypoints[i]:
             if 'goal_radius' in waypoints[i]['properties']:
