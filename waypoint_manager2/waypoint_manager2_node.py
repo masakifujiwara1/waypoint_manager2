@@ -265,7 +265,7 @@ class waypoint_manager2_node(Node):
         menu_handler.setCheckState(radius_mode_last, MenuHandler.UNCHECKED)
         radius_mode_last = feedback.menu_entry_id
 
-        # menu_entry_id: 0.5 -> 9, 0.75 -> 10, 1.0 -> 11, 1.5 -> 12
+        # menu_entry_id: 0.5 -> 9, 0.75 -> 10, 1.0 -> 11, 1.5 -> 12 3.0 -> 13
         waypoints = self.config['waypoint_server']['waypoints']
         if 'properties' not in waypoints[int(feedback.marker_name)]:
             waypoints[int(feedback.marker_name)]['properties'] = {}
@@ -277,6 +277,8 @@ class waypoint_manager2_node(Node):
             waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 1.0)
         elif feedback.menu_entry_id == 12:
             waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 1.5)
+        elif feedback.menu_entry_id == 13:
+            waypoints[int(feedback.marker_name)]['properties'].update(goal_radius = 3.0)
 
         menu_handler.setCheckState(radius_mode_last, MenuHandler.CHECKED)
         menu_handler.reApply(self.server)
@@ -306,7 +308,7 @@ class waypoint_manager2_node(Node):
         menu_handler.setCheckState(h_mode_last, MenuHandler.CHECKED)
 
         sub_menu_handle_radius = menu_handler.insert('Goal_diameter')
-        for i in range(4):
+        for i in range(5):
             if i == 0:
                 s = '0.5'
             if i == 1:
@@ -315,6 +317,8 @@ class waypoint_manager2_node(Node):
                 s = '1.0'
             if i == 3:
                 s = '1.5'
+            if i == 4:
+                s = '3.0'
             radius_mode_last = menu_handler.insert(s, parent=sub_menu_handle_radius, callback=self.modeCb_radius)
             menu_handler.setCheckState(radius_mode_last, MenuHandler.UNCHECKED)
         # check the very last entry
