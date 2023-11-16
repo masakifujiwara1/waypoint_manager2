@@ -171,6 +171,7 @@ class waypoint_manager2_node(Node):
 
     def next_wp_callback(self, request, response):
         self.next_wp()
+        self.send_clear_request()
         self.reject_next_wp = False
         response.success = True
         return response
@@ -632,7 +633,6 @@ class waypoint_manager2_node(Node):
         self.send_goal()
         self.first = True
         self.goal_ = False
-        self.send_clear_request()
 
 def main(args=None):
     rclpy.init(args=args)
